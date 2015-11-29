@@ -54,6 +54,7 @@ io.on('connection', function (socket) {
     });
     function _exec (process) {
         exec(process, function (code, output) {
+            console.log('done',code,output);
             io.emit("process_complete",{code:code,output:output});
         });
     }
