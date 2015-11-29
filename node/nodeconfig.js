@@ -1,0 +1,2 @@
+GLOBAL.SOCKET_PORT = 5100;
+GLOBAL.SAC = '61b5cd9e-f0cd-4ef0-9f4d-e1fef342d2be';
