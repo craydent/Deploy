@@ -25,6 +25,7 @@ io.on('connection', function (socket) {
             'shapow': 'shapow'
         };
     socket.on('tail',function(data){
+        console.log('tail',data);
         var app = apps[data.name];
         if (data.passcode == SAC && app) {
             var Tail = require('always-tail');
@@ -46,6 +47,7 @@ io.on('connection', function (socket) {
         }
     });
     socket.on('deploy', function(data){
+        console.log('deploy',data);
         if (data.passcode == SAC && apps[data.name] && actions[data.action]) {
             _exec("service deploy-nodejs " + apps[data.name] + " " + actions[data.action]);
         }
