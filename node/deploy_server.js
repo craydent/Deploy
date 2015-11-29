@@ -1,6 +1,6 @@
 require('./nodeconfig.js');
 require('shelljs/global');
-var io = require('socket.io')(SOCKET_PORT).of("deploy");
+var io = require('socket.io')(SOCKET_PORT);//.of("deploy");
 console.log('socket start on port: ' + SOCKET_PORT);
 //io.set("origins","*:*");
 
