@@ -1,0 +1,19 @@
+{
+  "name": "craydent-deploy",
+  "version": "1.0.0",
+  "description": "craydent deploy helper",
+  "main": "deploy_server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@bitbucket.org:cinada/craydent-deploy.git"
+  },
+  "keywords": [
+    "craydent",
+    "deploy"
+  ],
+  "author": "Clark Inada",
+  "license": "MIT"
+}
