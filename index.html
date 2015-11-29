@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <script src="http://localhost:5100/socket.io/socket.io.js"></script>
+    <script src="http://craydent.com:5100/socket.io/socket.io.js"></script>
     <script>
-        var socket = io('http://localhost:5100');
+        var socket = io('http://craydent.com:5100');
         socket.on('line', function (data) {
             document.getElementById("tail").innerHTML += data;
         });

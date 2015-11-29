@@ -2,6 +2,7 @@ require('./nodeconfig.js');
 require('shelljs/global');
 var io = require('socket.io')(SOCKET_PORT);
 console.log('socket start on port: ' + SOCKET_PORT);
+io.set('origins','*:*');
 io.on('connection', function (socket) {
     console.log('connection made')
     var actions = {
