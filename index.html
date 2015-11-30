@@ -13,7 +13,7 @@
             document.getElementById("tail_error").innerHTML += data;
         });
         socket.on('process_complete', function (data) {
-            document.getElementById("out").innerHTML += data.output;
+            document.getElementById("out").innerHTML += data.output.replace(/\n/g,'<br />') + '<br /><br />';
         });
     </script>
     <style>
@@ -31,19 +31,19 @@
 <body>
     <div class="apps">
         Apps:
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerHTML,action:'build'});">
+        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             catnap
         </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerHTML,action:'build'});">
+        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             deploy
         </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerHTML,action:'pullsync'});">
+        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullsync'});">
             proto
         </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerHTML,action:'pullrestart'});">
+        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullrestart'});">
             proxy
         </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerHTML,action:'build'});">
+        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             shapow
         </div>
     </div>
