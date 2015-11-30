@@ -49,7 +49,7 @@ io.on('connection', function (socket) {
     socket.on('deploy', function(data){
         console.log('deploy',data);
         if (data.passcode == SAC && apps[data.name] && actions[data.action]) {
-            _exec("echo $(users); service deploy-nodejs " + apps[data.name] + " " + actions[data.action]);
+            _exec("echo \"$USER\"; service deploy-nodejs " + apps[data.name] + " " + actions[data.action]);
         }
     });
     function _exec (process) {
