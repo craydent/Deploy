@@ -42,9 +42,7 @@ for (var i = 0, len = apps.length; i < len; i++) {
                 if (err) { io.emit('error',err); }
                 var cfsize = stats.size,
                     size = obj.size;
-                if (cfsize == size) { return; }
-                if (size) {
-                    console.log(cfsize,size);
+                if (size && cfsize > size) {
                     fs.read(obj.fd, new Buffer(cfsize - size), 0, cfsize - size - 1, size, function (err, br, buffer) {
                         io.emit('line', {line:buffer.toString(),file:obj.filename});
                     });
