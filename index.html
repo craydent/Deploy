@@ -65,19 +65,19 @@
         <br />
         <br />
         Logs:
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             catnap
         </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             deploy
         </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullsync'});">
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullsync'});">
             proto
         </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullrestart'});">
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullrestart'});">
             proxy
         </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             shapow
         </div>
         <div onclick="reload_config();" style="margin-top: 40px;">
