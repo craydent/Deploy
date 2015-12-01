@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <!--<script src="http://craydent.com:4900/socket.io/socket.io.js"></script>-->
-    <script src="http://localhost:4900/socket.io/socket.io.js"></script>
+    <script src="http://craydent.com:4900/socket.io/socket.io.js"></script>
+    <!--<script src="http://localhost:4900/socket.io/socket.io.js"></script>-->
     <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="http://craydent.com/resources/library/craydent-1.8.0.js"></script>
     <script>
-//        var socket = io('http://craydent.com:4900');
-        var socket = io('http://localhost:4900');
+        var socket = io('http://craydent.com:4900');
+//        var socket = io('http://localhost:4900');
         socket.on('line', function (data) {
             document.getElementById("tail").innerHTML += data.file + ":"+data.line + "<br />";
         });
