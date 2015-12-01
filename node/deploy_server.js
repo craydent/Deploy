@@ -17,11 +17,11 @@ var actions = {
         "sync":"sync"
     },
     apps = [
-        {'name': 'catnap',filename:"catnap_server.js.log",logfile:"/var/scripts/logs/catnap_server.js.log",size:0,fd:null},
-        {'name': 'deploy',filename:"deploy_server.js.log",logfile:"/var/scripts/logs/deploy_server.js.log",size:0,fd:null},
-        {'name': 'proto',filename:"proto_server.js.log",logfile:"/var/scripts/logs/proto_server.js.log",size:0,fd:null},
-        {'name': 'proxy',filename:"proxy_server.js.log",logfile:"/var/scripts/logs/proxy_server.js.log",size:0,fd:null},
-        {'name': 'shapow',filename:"shapow_server.js.log",logfile:"/var/scripts/logs/shapow_server.js.log",size:0,fd:null}
+        {'name': 'catnap',filename:"catnap_server.js.log",logfile:"/var/scripts/logs/catnap/catnap_server.js.log",size:0,fd:null},
+        {'name': 'deploy',filename:"deploy_server.js.log",logfile:"/var/scripts/logs/deploy/deploy_server.js.log",size:0,fd:null},
+        {'name': 'proto',filename:"proto_server.js.log",logfile:"/var/scripts/logs/proto/proto_server.js.log",size:0,fd:null},
+        {'name': 'proxy',filename:"proxy_server.js.log",logfile:"/var/scripts/logs/proxy/proxy_server.js.log",size:0,fd:null},
+        {'name': 'shapow',filename:"shapow_server.js.log",logfile:"/var/scripts/logs/shapow/shapow_server.js.log",size:0,fd:null}
 
         //{'name': 'catnap',filename:"catnap_server.js.log",logfile:"logs/catnap_server.js.log",size:0,fd:null},
         //{'name': 'deploy',filename:"deploy_server.js.log",logfile:"logs/deploy_server.js.log",size:0,fd:null},
