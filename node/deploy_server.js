@@ -44,7 +44,7 @@ for (var i = 0, len = apps.length; i < len; i++) {
                     size = obj.size;
                 if (size && cfsize > size) {
                     fs.read(obj.fd, new Buffer(cfsize - size), 0, cfsize - size - 1, size, function (err, br, buffer) {
-                        io.emit('line', {line:buffer.toString(),file:obj.filename});
+                        io.emit('line', {line:buffer.toString('utf8'),file:obj.filename});
                     });
                 }
                 obj.size = cfsize;
