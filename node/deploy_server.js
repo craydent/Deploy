@@ -4,48 +4,57 @@ var io = require('socket.io')(SOCKET_PORT);//.of("deploy");
 console.log('socket start on port: ' + SOCKET_PORT);
 //io.set("origins","*:*");
 
+var fs = require('fs');
+var actions = {
+        "build":"build",
+        "install":"install",
+        "pull":"pull",
+        "pullrestart":"pullrestart",
+        "pullsync":"pullsync",
+        "restart":"restart",
+        "start":"start",
+        "stop":"stop",
+        "sync":"sync"
+    },
+    apps = [
+        {'name': 'catnap',filename:"catnap_server.js.log",logfile:"/var/scripts/logs/catnap_server.js.log",size:0,fd:null},
+        {'name': 'deploy',filename:"deploy_server.js.log",logfile:"/var/scripts/logs/deploy_server.js.log",size:0,fd:null},
+        {'name': 'proto',filename:"proto_server.js.log",logfile:"/var/scripts/logs/proto_server.js.log",size:0,fd:null},
+        {'name': 'proxy',filename:"proxy_server.js.log",logfile:"/var/scripts/logs/proxy_server.js.log",size:0,fd:null},
+        {'name': 'shapow',filename:"shapow_server.js.log",logfile:"/var/scripts/logs/shapow_server.js.log",size:0,fd:null}
+
+        //{'name': 'catnap',filename:"catnap_server.js.log",logfile:"logs/catnap_server.js.log",size:0,fd:null},
+        //{'name': 'deploy',filename:"deploy_server.js.log",logfile:"logs/deploy_server.js.log",size:0,fd:null},
+        //{'name': 'proto',filename:"proto_server.js.log",logfile:"logs/proto_server.js.log",size:0,fd:null},
+        //{'name': 'proxy',filename:"proxy_server.js.log",logfile:"logs/proxy_server.js.log",size:0,fd:null},
+        //{'name': 'shapow',filename:"shapow_server.js.log",logfile:"logs/shapow_server.js.log",size:0,fd:null}
+    ];
+
+for (var i = 0, len = apps.length; i < len; i++) {
+    (function (obj) {
+        var file = obj.logfile;
+        if (!fs.existsSync(file)) { return; }
+        obj.fd = fs.openSync(file, 'r');
+        obj.size = fs.statSync(file).size;
+        fs.watch(file, function (action, filename) {
+            if (action != "change") { return; }
+            fs.stat(file, function (err, stats) {
+                if (err) { io.emit('error',err); }
+                var cfsize = stats.size,
+                    size = obj.size;
+                if (cfsize == size) { return; }
+                if (size) {
+                    fs.read(obj.fd, new Buffer(cfsize - size), 0, cfsize - size - 1, size, function (err, br, buffer) {
+                        io.emit('line', {line:buffer.toString(),file:obj.filename});
+                    });
+                }
+                obj.size = cfsize;
+            });
+        });
+    })(apps[i]);
+}
 io.on('connection', function (socket) {
-    console.log('connection made')
-    var actions = {
-            "build":"build",
-            "install":"install",
-            "pull":"pull",
-            "pullrestart":"pullrestart",
-            "pullsync":"pullsync",
-            "restart":"restart",
-            "start":"start",
-            "stop":"stop",
-            "sync":"sync"
-        },
-        apps = {
-            'catnap': 'catnap',
-            'deploy': 'deploy',
-            'proto': 'proto',
-            'proxy': 'proxy',
-            'shapow': 'shapow'
-        };
-    socket.on('tail',function(data){
-        console.log('tail',data);
-        var app = apps[data.name];
-        if (data.passcode == SAC && app) {
-            var Tail = require('always-tail');
-            var fs = require('fs');
-            var filename = "/var/scripts/logs/" + app + "/" + app + "_server.js.log";
-
-            if (!fs.existsSync(filename)) fs.writeFileSync(filename, "");
-
-            var tail = new Tail(filename, '\n');
-
-            tail.on('line', function(data) {
-                io.emit("line:", data);
-            });
-
-            tail.on('error', function(data) {
-                io.emit("error:", data);
-            });
-            tail.watch();
-        }
-    });
+    console.log('connection made');
     socket.on('deploy', function(data){
         console.log('deploy',data);
         if (data.passcode == SAC && apps[data.name] && actions[data.action]) {
