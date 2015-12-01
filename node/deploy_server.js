@@ -66,7 +66,6 @@ io.on('connection', function (socket) {
     function _exec (process) {
         exec(process, function (code, output) {
             console.log('deploy done');
-            exit(0);
             io.emit("process_complete",{code:code,output:output});
         });
     }
