@@ -57,8 +57,10 @@ io.on('connection', function (socket) {
     console.log('connection made');
     socket.on('deploy', function(data){
         console.log('deploy',data);
-        if (data.passcode == SAC && apps[data.name] && actions[data.action]) {
-            _exec("service deploy-nodejs " + apps[data.name] + " " + actions[data.action]);
+        var appobj = apps.filter(function(app){ return app.name == data.name;})[0] || {};
+        var name = appobj.name;
+        if (data.passcode == SAC && name && actions[data.action]) {
+            _exec("service deploy-nodejs " + name + " " + actions[data.action]);
         }
     });
     function _exec (process) {
