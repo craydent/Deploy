@@ -60,12 +60,18 @@ io.on('connection', function (socket) {
         var name = appobj.name;
         console.log(appobj);
         if (data.passcode == SAC && name && actions[data.action]) {
-            _exec("service deploy-nodejs " + name + " " + actions[data.action]);
+            _exec("service deploy-nodejs " + name + " " + actions[data.action],'deploy done');
+        }
+    });
+    socket.on("add", function(data){
+        console.log('adding',data);
+        if (data.passcode == SAC) {
+            _exec("service add-nodejs " + data.git_url + " " + data.deploy_path, "add complete");
         }
     });
     function _exec (process) {
-        exec(process, function (code, output) {
-            console.log('deploy done');
+        exec(process, function (code, output, message) {
+            console.log(message);
             io.emit("process_complete",{code:code,output:output});
         });
     }
