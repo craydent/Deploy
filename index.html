@@ -18,7 +18,8 @@
         };
         var socket = io('http://craydent.com:4900');
         function printTo(print,to){
-            document.getElementById(to).innerHTML += print;
+            var d = $c.format(new Date(),'m/d/y h:i:s');
+            document.getElementById(to).innerHTML += '<small>'+d+'</small> '+print;
             appStrs[to] += print;
             //goJoe(appStrs[to]);
         }
@@ -48,7 +49,16 @@
     </script>
     <style>
         .output_window {
-            margin-top:40px;
+            position:absolute;
+            top:40px;
+            left:0;
+            bottom:0;
+            right:0;
+            display:none;
+            overflow:auto;
+        }
+        .output_window.active{
+            display: block;
         }
         .apps {
             width: 150px;
@@ -170,7 +180,13 @@
                 action:action||null});
         }
         $(function(){
-
+            $('outputName').click(function(){
+                var index = $(this).index();
+                $('outputName,.output_window').removeClass('active');
+                $('outputName,.output_window').eq(index).addClass('active');
+                $('.output_window').eq(index).addClass('active');
+                //$('outputName,output_window')
+            })
         })
     </script>
 </head>
@@ -234,14 +250,15 @@
     </joeHolder>
     <appOutputs>
         <outputsMenu>
-            <outputName class="active">Tail</outputName>
+
             <outputName>Errors</outputName>
             <outputName>STD Out</outputName>
+            <outputName class="active">Tail</outputName>
 
         </outputsMenu>
         <div id="tail_error" class="output_window">Errors:<br /></div>
         <div id="out" class="output_window">STD Out:<br /></div>
-        <div id="tail" class="output_window"></div>
+        <div id="tail" class="output_window active"></div>
     </appOutputs>
 
 </appWrapper>
