@@ -48,9 +48,7 @@
     </script>
     <style>
         .output_window {
-            float: left;
-            height: 100%;
-            width: 300px;
+            margin-top:40px;
         }
         .apps {
             width: 150px;
@@ -61,7 +59,7 @@
             margin:10px;
         }
 
-        #tail {
+/*        #tail {
             position: absolute;
             right: 10px;
             top: 70px;
@@ -71,10 +69,10 @@
             padding:50px 10px 0 10px;
             overflow:auto;
             color:#eee;
-            /* margin: 5px; */
-        }
+            /!* margin: 5px; *!/
+        }*/
 
-        appWrapper,appHeader,appMenu,joeHolder{
+        appWrapper,appHeader,appMenu,joeHolder,appOutputs{
             position:absolute;
             top:0;
             left:0;
@@ -125,14 +123,40 @@
             color:#fff;
         }
 
-        outputLabel{
+        appOutputs{
+            position: absolute;
+            right: 10px;
+            top: 70px;
+            left: 160px;
+            bottom: 10px;
+            border: 1px solid #fff;
+            padding:50px 10px 0 10px;
+            overflow:auto;
+            color:#eee;
+            /* margin: 5px; */
+
+        }
+
+        outputsMenu{
             display:block;
-            padding:10px;
             background:rgba(255,255,255,.2);
             position:absolute;
             top:0;
             left:0;
             right:0;
+        }
+
+        outputName{
+            width:33%;
+            float:left;
+            box-sizing: border-box;
+            padding:10px;
+            cursor:pointer;
+            transition:.2s;
+        }
+        outputName.active{
+            background:rgba(255,255,255,.2);
+            cursor:auto;
         }
 
     </style>
@@ -145,13 +169,14 @@
                 name:dom.innerText,
                 action:action||null});
         }
+        $(function(){
+
+        })
     </script>
 </head>
 <body>
 <appWrapper>
-    <div id="tail_error" class="output_window">Errors:<br /></div>
-    <div id="out" class="output_window">STD Out:<br /></div>
-    <div id="tail" class=""><outputLabel>Tail</outputLabel></div>
+
 
     <appHeader>
         Craydent Deploy
@@ -207,6 +232,17 @@
     <joeHolder>
 
     </joeHolder>
+    <appOutputs>
+        <outputsMenu>
+            <outputName class="active">Tail</outputName>
+            <outputName>Errors</outputName>
+            <outputName>STD Out</outputName>
+
+        </outputsMenu>
+        <div id="tail_error" class="output_window">Errors:<br /></div>
+        <div id="out" class="output_window">STD Out:<br /></div>
+        <div id="tail" class="output_window"></div>
+    </appOutputs>
 
 </appWrapper>
 
