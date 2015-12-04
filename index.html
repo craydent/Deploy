@@ -2,22 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Craydent Deploy</title>
+    <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
     <script src="http://craydent.com:4900/socket.io/socket.io.js"></script>
     <!--<script src="http://localhost:4900/socket.io/socket.io.js"></script>-->
-    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
-    <script src="http://craydent.com/resources/library/craydent-1.8.0.js"></script>
+<!--    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="http://craydent.com/resources/library/craydent-1.8.0.js"></script>-->
+    <script src="http://craydent.com/JsonObjectEditor/_joecraydent.js"></script>
+
     <script>
+        var appStrs = {
+            tail:'',
+            tail_error:'',
+            process_complete:''
+        };
         var socket = io('http://craydent.com:4900');
+        function printTo(print,to){
+            document.getElementById(to).innerHTML += print;
+            appStrs[to] += print;
+            //goJoe(appStrs[to]);
+        }
 //        var socket = io('http://localhost:4900');
         socket.on('line', function (data) {
-            document.getElementById("tail").innerHTML += data.file + ":"+data.line + "<br />";
+            var m =  data.file + ":"+data.line + "<br />";
+            printTo(m,'tail');
         });
         socket.on('error', function (data) {
             document.getElementById("tail_error").innerHTML += data + "<br />";
+            printTo(m,'tail');
         });
         socket.on('process_complete', function (data) {
             document.getElementById("out").innerHTML += data.output.replace(/\n/g,'<br />') + '<br /><br />';
+            printTo(m,'tail');
         });
         function reload_config() {
             $.ajax({
@@ -44,15 +60,112 @@
             cursor: pointer;
             margin:10px;
         }
+
+        #tail {
+            position: absolute;
+            right: 10px;
+            top: 70px;
+            left: 160px;
+            bottom: 10px;
+            border: 1px solid #fff;
+            padding:50px 10px 0 10px;
+            overflow:auto;
+            color:#eee;
+            /* margin: 5px; */
+        }
+
+        appWrapper,appHeader,appMenu,joeHolder{
+            position:absolute;
+            top:0;
+            left:0;
+            bottom:0;
+            right:0;
+            display:block;
+        }
+        appWrapper{
+
+            background:#117799;
+        }
+        appHeader{
+            height:60px;
+            bottom:auto;
+            background:rgba(255,255,255,.3);
+            font-size:28px;
+            line-height:80px;
+        }
+        appMenu,joeHolder{
+            top:60px;
+        }
+        appMenu{
+            background:rgba(0,0,0,.2);
+            width:150px;
+        }
+        joeHolder{
+            left:150px;
+        }
+
+        appMenuLabel,appMenuItem,appMenuGroup{
+            display:block;
+        }
+        appMenuLabel{
+
+            padding:8px;
+            background:rgba(0,0,0,.1);
+            color:#ddd;
+        }
+        appMenuItem{
+            padding:10px;
+            color:#ccc;
+            transition:.2s;
+            cursor: pointer;
+        }
+
+        appMenuItem:hover{
+            background:rgba(0,0,0,.2);
+            color:#fff;
+        }
+
+        outputLabel{
+            display:block;
+            padding:10px;
+            background:rgba(255,255,255,.2);
+            position:absolute;
+            top:0;
+            left:0;
+            right:0;
+        }
+
     </style>
+    <script>
+        function callServerAction(socketaction,dom,action){
+
+            //socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});
+            socket.emit(socketaction,{
+                passcode:window.location.search.substring(1),
+                name:dom.innerText,
+                action:action||null});
+        }
+    </script>
 </head>
 <body>
-    <div class="apps">
-        Apps:
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
-            catnap
-        </div>
-        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+<appWrapper>
+    <div id="tail_error" class="output_window">Errors:<br /></div>
+    <div id="out" class="output_window">STD Out:<br /></div>
+    <div id="tail" class=""><outputLabel>Tail</outputLabel></div>
+
+    <appHeader>
+        Craydent Deploy
+    </appHeader>
+    <appMenu>
+        <appMenuLabel>Apps</appMenuLabel>
+        <appMenuItem onclick="callServerAction('deploy',this,'build')">catnap</appMenuItem>
+        <appMenuItem onclick="callServerAction('deploy',this,'build')">deploy</appMenuItem>
+        <appMenuItem onclick="callServerAction('deploy',this,'pullsync')">proto</appMenuItem>
+        <appMenuItem onclick="callServerAction('deploy',this,'pullrestart')">proxy</appMenuItem>
+        <appMenuItem onclick="callServerAction('deploy',this,'build')">shapow</appMenuItem>
+        <appMenuItem onclick="callServerAction('deploy',this,'pullsync')">joe</appMenuItem>
+
+<!--        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             deploy
         </div>
         <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullsync'});">
@@ -63,11 +176,16 @@
         </div>
         <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             shapow
-        </div>
-        <br />
-        <br />
-        Logs:
-        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+        </div>-->
+
+        <appMenuLabel>Logs</appMenuLabel>
+        <appMenuItem onclick="callServerAction('tail',this)">catnap</appMenuItem>
+        <appMenuItem onclick="callServerAction('tail',this)">deploy</appMenuItem>
+        <appMenuItem onclick="callServerAction('tail',this)">proto</appMenuItem>
+        <appMenuItem onclick="callServerAction('tail',this)">proxy</appMenuItem>
+        <appMenuItem onclick="callServerAction('tail',this)">shapow</appMenuItem>
+
+      <!--  <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             catnap
         </div>
         <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
@@ -81,13 +199,21 @@
         </div>
         <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
             shapow
-        </div>
+        </div>-->
         <div onclick="reload_config();" style="margin-top: 40px;">
             Reload Proxy Config
         </div>
+    </appMenu>
+    <joeHolder>
+
+    </joeHolder>
+
+</appWrapper>
+
+
+    <div class="apps">
+
     </div>
-    <div id="tail_error" class="output_window">Errors:<br /></div>
-    <div id="out" class="output_window">STD Out:<br /></div>
-    <div id="tail" class="output_window">Tail:<br /></div>
+
 </body>
 </html>
