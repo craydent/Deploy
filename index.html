@@ -67,8 +67,10 @@
             top: 70px;
             left: 160px;
             bottom: 10px;
-            padding:10px;
             border: 1px solid #fff;
+            padding:50px 10px 0 10px;
+            overflow:auto;
+            color:#eee;
             /* margin: 5px; */
         }
 
@@ -123,6 +125,16 @@
             color:#fff;
         }
 
+        outputLabel{
+            display:block;
+            padding:10px;
+            background:rgba(255,255,255,.2);
+            position:absolute;
+            top:0;
+            left:0;
+            right:0;
+        }
+
     </style>
     <script>
         function callServerAction(socketaction,dom,action){
@@ -139,7 +151,7 @@
 <appWrapper>
     <div id="tail_error" class="output_window">Errors:<br /></div>
     <div id="out" class="output_window">STD Out:<br /></div>
-    <id="tail" class=""><outputLabel>Tail</outputLabel></div>
+    <div id="tail" class=""><outputLabel>Tail</outputLabel></div>
 
     <appHeader>
         Craydent Deploy
