@@ -20,6 +20,7 @@ var actions = {
         {'name': 'catnap',filename:"catnap_server.js.log",logfile:"/var/scripts/logs/catnap/catnap_server.js.log",size:0,fd:null},
         {'name': 'deploy',filename:"deploy_server.js.log",logfile:"/var/scripts/logs/deploy/deploy_server.js.log",size:0,fd:null},
         {'name': 'proto',filename:"proto_server.js.log",logfile:"/var/scripts/logs/proto/proto_server.js.log",size:0,fd:null},
+        {'name': 'joe'},
         {'name': 'proxy',filename:"proxy_server.js.log",logfile:"/var/scripts/logs/proxy/proxy_server.js.log",size:0,fd:null},
         {'name': 'shapow',filename:"shapow_server.js.log",logfile:"/var/scripts/logs/shapow/shapow_server.js.log",size:0,fd:null}
 
@@ -32,6 +33,7 @@ var actions = {
 
 for (var i = 0, len = apps.length; i < len; i++) {
     (function (obj) {
+        if (!obj.logfile) { return; }
         var file = obj.logfile;
         if (!fs.existsSync(file)) { return; }
         obj.fd = fs.openSync(file, 'r');
