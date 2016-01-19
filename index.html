@@ -4,14 +4,14 @@
     <meta charset="utf-8">
     <title>cDeploy</title>
     <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
-    <link rel="stylesheet" href="http://craydent.com/JsonObjectEditor/JsonObjectEditor/capp.css"/>
+    <link rel="stylesheet" href="http://craydent.com/JsonObjectEditor/capp.css"/>
     <link rel="stylesheet" href="/JsonObjectEditor/capp.css"/>
     <script src="http://craydent.com:4900/socket.io/socket.io.js"></script>
     <!--<script src="http://localhost:4900/socket.io/socket.io.js"></script>-->
 <!--    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="http://craydent.com/resources/library/craydent-1.8.0.js"></script>-->
     <script src="http://craydent.com/JsonObjectEditor/_joecraydent.js"></script>
-    <script src="http://craydent.com/JsonObjectEditor/JsonObjectEditor/capp.js"></script>
+    <script src="http://craydent.com/JsonObjectEditor/capp.js"></script>
     <script src="/JsonObjectEditor/capp.js"></script>
 
     <script>
@@ -167,7 +167,7 @@
     <script>
         function callServerAction(socketaction,dom,action) {
             var name = dom.innerText;
-            if (confirm('Are you sure you want to redeploy \n'+name)) {
+            if (confirm('Are you sure you want to '+socketaction+' \n'+name)) {
                 //socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});
                 socket.emit(socketaction, {
                     passcode: window.location.search.substring(1),
