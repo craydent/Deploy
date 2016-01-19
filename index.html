@@ -34,10 +34,12 @@
             printTo(m,'tail');
         });
         socket.on('error', function (data) {
+            var m =  data.file + ":"+data.line + "<br />";
             document.getElementById("tail_error").innerHTML += data + "<br />";
             printTo(m,'tail');
         });
         socket.on('process_complete', function (data) {
+            var m =  data.file + ":"+data.line + "<br />";
             document.getElementById("out").innerHTML += data.output.replace(/\n/g,'<br />') + '<br /><br />';
             printTo(m,'tail');
         });
