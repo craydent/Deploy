@@ -74,59 +74,6 @@
             margin:10px;
         }
 
-/*
-
-        appWrapper,appHeader,appMenu,joeHolder,appOutputs{
-            position:absolute;
-            top:0;
-            left:0;
-            bottom:0;
-            right:0;
-            display:block;
-        }
-        appWrapper{
-
-            background:#117799;
-        }
-        appHeader{
-            height:60px;
-            bottom:auto;
-            background:rgba(255,255,255,.3);
-            font-size:28px;
-            line-height:80px;
-        }
-        appMenu,joeHolder{
-            top:60px;
-        }
-        appMenu{
-            background:rgba(0,0,0,.2);
-            width:150px;
-        }
-        joeHolder{
-            left:150px;
-        }
-
-        appMenuLabel,capp-button,appMenuGroup{
-            display:block;
-        }
-        appMenuLabel{
-
-            padding:8px;
-            background:rgba(0,0,0,.1);
-            color:#ddd;
-        }
-        capp-button{
-            padding:10px;
-            color:#ccc;
-            transition:.2s;
-            cursor: pointer;
-        }
-
-        capp-button:hover{
-            background:rgba(0,0,0,.2);
-            color:#fff;
-        }
-*/
         #appOutputs{
             position: absolute;
             right: 10px;
@@ -227,7 +174,7 @@
             <capp-button onclick="callServerAction('tail',this)">proxy</capp-button>
             <capp-button onclick="callServerAction('tail',this)">shapow</capp-button>-->
             <capp-button  onclick="reload_config();">
-                <capp-button-icon><img src="/JsonObjectEditor/img/svgs/__reload.svg" class="svg"/></capp-button-icon>
+                <capp-button-icon><img src="http://craydent.com/JsonObjectEditor/img/svgs/__reload.svg" class="svg"/></capp-button-icon>
                 <capp-button-label>Reload Proxy Config</capp-button-label>
             </capp-button>
         </capp-panel>
