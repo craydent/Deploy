@@ -2,10 +2,14 @@
 
 # $1=>email address
 # $2=>root directory
+# $3=>username
 
 
 
-uname='craydent_deployer';
+uname=$3;
+if [ -z "$3" ]; then
+    uname='root';
+fi
 rootdir=$2;
 if [ -z "$2" ]; then
     rootdir='/var';

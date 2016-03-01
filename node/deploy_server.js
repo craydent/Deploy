@@ -138,7 +138,7 @@ io.on('connection', function (socket) {
         console.log('initializing',data);
         if (!nconfig || data.passcode == SAC) {
             nconfig = true;
-            _exec("echo '"+data.password+"' | sudo -S bash " + shelldir + "initial_script.sh " + data.email + " " + (data.rootdir || "/var"),function(code,output,message){
+            _exec("echo '"+data.password+"' | sudo -S bash " + shelldir + "initial_script.sh " + data.email + " " + (data.rootdir || "/var") + " $USER",function(code,output,message){
                 console.log(message);
                 socket.emit("initialized",{error:false});
             });
