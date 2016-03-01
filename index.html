@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="http://craydent.com/JsonObjectEditor/capp.css"/>
     <link rel="stylesheet" href="/JsonObjectEditor/capp.css"/>
-    <script src="http://craydent.com:4900/socket.io/socket.io.js"></script>
+    <script src=":4900/socket.io/socket.io.js"></script>
     <!--<script src="http://localhost:4900/socket.io/socket.io.js"></script>-->
 <!--    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src="http://craydent.com/resources/library/craydent-1.8.0.js"></script>-->
@@ -21,7 +21,7 @@
             tail_error:'',
             process_complete:''
         };
-        var socket = io('http://craydent.com:4900');
+        var socket = io($l.protocol + "//" + $l.hostname + ':4900');
         function printTo(print,to){
             var d = $c.format(new Date(),'m/d/y h:i:s');
             document.getElementById(to).innerHTML += '<small>'+d+'</small> '+print;
@@ -112,16 +112,23 @@
             background:rgba(255,255,255,.2);
             cursor:auto;
         }
-
+       capp-submenu {
+           position: absolute;
+           display: none;
+       }
+       capp-submenu.active {
+           display: block;
+       }
     </style>
     <script>
         function callServerAction(socketaction,dom,action) {
-            var name = dom.innerText;
+//            var name = dom.innerText;
+            var name = dom.getAttribute('data-appname');
             if (confirm('Are you sure you want to '+socketaction+' \n'+name)) {
                 //socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});
                 socket.emit(socketaction, {
                     passcode: window.location.search.substring(1),
-                    name: dom.innerText,
+                    name: name,
                     action: action || null
                 });
             }
@@ -137,7 +144,17 @@
             var capp = new CraydentApp({
                 autoInit:true
             });
-        })
+        });
+        function showSubmenu(dom) {
+            $('capp-submenu').addClass('active');
+            $('capp-submenu').attr('data-appname',dom.innerHTML);
+            $('capp-submenu')[0].style.top = (dom.top() - dom.height()) + "px";
+            $('capp-submenu')[0].style.left = (dom.left() + dom.width()) + "px";
+        }
+        function hideSubmenu(dom) {
+            $('capp-submenu').removeClass('active');
+            $('capp-submenu').attr('data-app','');
+        }
     </script>
 </head>
 <body bgcolor="#0099aa">
@@ -161,13 +178,26 @@
                     <capp-button-label>Deployable Apps</capp-button-label>
 
                 </capp-menu-label>
-                <capp-menu-option onclick="callServerAction('deploy',this,'build')">catnap</capp-menu-option>
-                <capp-menu-option onclick="callServerAction('deploy',this,'build')">deploy</capp-menu-option>
-                <capp-menu-option onclick="callServerAction('deploy',this,'pullsync')">proto</capp-menu-option>
-                <capp-menu-option onclick="callServerAction('deploy',this,'pullrestart')">proxy</capp-menu-option>
-                <capp-menu-option onclick="callServerAction('deploy',this,'build')">shapow</capp-menu-option>
-                <capp-menu-option onclick="callServerAction('deploy',this,'pullsync')">joe</capp-menu-option>
+                <capp-menu-option onmouseover="showSubmenu(this);" onmouseout="hideSubmenu(this);">catnap</capp-menu-option>
+                <capp-menu-option onmouseover="showSubmenu(this);" onmouseout="hideSubmenu(this);">deploy</capp-menu-option>
+                <capp-menu-option onmouseover="showSubmenu(this);" onmouseout="hideSubmenu(this);">proto</capp-menu-option>
+                <capp-menu-option onmouseover="showSubmenu(this);" onmouseout="hideSubmenu(this);">proxy</capp-menu-option>
+                <capp-menu-option onmouseover="showSubmenu(this);" onmouseout="hideSubmenu(this);">shapow</capp-menu-option>
+                <capp-menu-option onmouseover="showSubmenu(this);" onmouseout="hideSubmenu(this);">joe</capp-menu-option>
             </capp-menu>
+
+            <capp-submenu>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'backup')">backup</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'build')">build</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'npminstall')">npminstall</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'pull')">pull</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'pullrestart')">pullrestart</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'pullsync')">pullsync</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'restart')">restart</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'start')">start</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'stop')">stop</capp-submenu-option>
+                <capp-submenu-option onclick="callServerAction('deploy',this,'sync')">sync</capp-submenu-option>
+            </capp-submenu>
 
 <!--            <appMenuLabel>Logs</appMenuLabel>
             <capp-button onclick="callServerAction('tail',this)">catnap</capp-button>

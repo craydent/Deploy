@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Project</title>
+    <script src=":4900/socket.io/socket.io.js"></script>
+    <script src="http://craydent.com/JsonObjectEditor/_joecraydent.js"></script>
+    <script>
+        function addServer(){
+            $('servers').innerHTML += '<input type="text" placeholder="Servers" />';
+        }
+        var socket = io($l.protocol + "//" + $l.hostname + ':4900');
+        socket.on('projectadded',function(data){
+            if (data.error) {
+                return alert('add failed');
+            }
+            alert('project added');
+        });
+        socket.on('showsshkey',function(data){
+            if (data.error) {
+                return alert('sshkey failed');
+            }
+            if (!$('ssh'+data.name,true)) {
+                $('sshkeynames').innerHTML += '<div id="ssh'+data.name+'" ondblclick="getsshkey(this);">'+data.name+'</div>';
+            }
+            $('sshkeycontent').innerHTML=data.content;
+        });
+        function create(){
+            var servers = [];
+            var txtboxes = $('#servers input');
+            for (var i = 0, len = txtboxes.length; i < len; i++) {
+                servers.push(txtboxes[i].value);
+            }
+            var obj = {
+                passcode: window.location.search.substring(1),
+                'name': $('pname').value,
+                git_address:$('gitaddress').value,
+                key_name:$('kname').value,
+                servers: servers,
+                www:$('wwwdir').value,
+                nodejs:$('nodedir').value,
+                webdir:$('webdir').value,
+                email:$('email').value
+            };
+            socket.emit('gitadd',obj);
+        }
+        function addsshkey() {
+            var name = $('newsshkeyname').value;
+            $('newsshkeyname').value = "";
+            socket.emit('sshkey',{passcode: window.location.search.substring(1),name:name,email:$('email').value});
+        }
+        function getsshkey(dom){
+            socket.emit('getsshkey',{passcode: window.location.search.substring(1),name:dom.innerHTML});
+        }
+    </script>
+</head>
+<body>
+    <div>
+        Available ssh key names:
+        <br />
+        <div id="sshkeynames">
+            ${foreach ${key} in ${keys}}<div id="ssh${key}" ondblclick="getsshkey(this);">${key}</div><br />${end foreach}
+        </div>
+        <input id="newsshkeyname" type="text" placeholder="New SSH Key Name" />
+        <button onclick="addsshkey()">Add ssh Key</button>
+    </div>
+    <div id="sshkeycontent"></div>
+    <input id="pname" type="text" placeholder="Project Name" />
+    <input id="kname" type="text" placeholder="ssh key name" />
+    <input id="gitaddress" type="text" placeholder="git ssh url" />
+    <br />
+    <button onclick="addServer();">Add servers</button>
+    <div id="servers"></div>
+    <!--<input id="" type="text" placeholder="Servers" />-->
+    <input id="nodedir" type="text" placeholder="NodeJS Directory" />
+    <div>Full directory path to your web directory on the server (ex:/var/www)</div>
+    <input id="wwwdir" type="text" placeholder="WWW Directory" />
+    <div>Relative directory path to your web directory on git (ex: webdir)</div>
+    <input id="webdir" type="text" placeholder="Local Web Directory" />
+    <div>Email to receive notifications</div>
+    <input id="email" type="text" placeholder="Email" />
+
+    <button onclick="create();">Add Project</button>
+</body>
+</html>
