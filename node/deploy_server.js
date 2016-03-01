@@ -103,13 +103,15 @@ io.on('connection', function (socket) {
             if (appobj) {
                 return io.emit("add_error",{code:'1',output:data.name + " already exists."});
             }
-            _exec(shelldir + "git_script.sh " + data.git_address + " " + (data.key_name || "master_id_rsa").replace(/\.pub$/,''), function(code,output,message) {
+            var projectName = data.git_address.replace(/.*\/(.*?)\.git$/,'$1');
+            _exec(shelldir + "git_script.sh " + data.git_address + " " + projectName + " " + data.name + " " + (data.key_name || "master_id_rsa").replace(/\.pub$/,''), function(code,output,message) {
                 var logFiles = [];
                 var servers = $c.isArray(data.servers) ? data.servers : [];
                 for (var i = 0, len = servers.length; i < len; i++) {
                     logFiles.push("/var/craydentdeploy/log/" + data.name + "/" + servers[i]);
                 }
                 apps.push({
+                    'git':data.git_address,
                     'name': data.name,
                     servers: servers,
                     logfile: logFiles,

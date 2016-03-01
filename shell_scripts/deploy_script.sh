@@ -70,13 +70,19 @@ npm_install()
 
 case $2 in
 start)
-    restart_node $scripts/node_script.sh $1 $6 $4;
+    if [ -n "$6" ]; then
+        restart_node $scripts/node_script.sh $1 $6 $4;
+    fi
 ;;
 restart)
-    restart_node $scripts/node_script.sh $1 $6 $4;
+    if [ -n "$6" ]; then
+        restart_node $scripts/node_script.sh $1 $6 $4;
+    fi
 ;;
 sync)
-    www_sync $gitpath $4 $gitpath/$5 $3;
+    if [ -n "$3" ] && [ -n "$5" ]; then
+        www_sync $gitpath $4 $gitpath/$5 $3;
+    fi
 ;;
 pull)
     archive_files $archive $gitpath;
@@ -85,25 +91,42 @@ pull)
 build)
     archive_files $archive $gitpath;
     git_pull $gitpath/$1;
-    www_sync $gitpath $4 $gitpath/$5 $3;
-    npm_install $gitpath/$4;
-    restart_node $scripts/node_script.sh $1 $6 $4;
+    if [ -n "$3" ] && [ -n "$5" ]; then
+        www_sync $gitpath $4 $gitpath/$5 $3;
+    fi
+    if [ -e "$gitpath/$4/package.json" ]; then
+        npm_install $gitpath/$4;
+    fi
+    if [ -n "$6" ]; then
+        restart_node $scripts/node_script.sh $1 $6 $4;
+    fi
 ;;
 stop)
-    restart_node $scripts/node_script.sh $1 $6 $4 "stop";
+    if [ -n "$6" ]; then
+        restart_node $scripts/node_script.sh $1 $6 $4 "stop";
+    fi
 ;;
 pullsync)
     archive_files $archive $gitpath;
     git_pull $gitpath/$1;
-    www_sync $gitpath $4 $gitpath/$5 $3;
+    if [ -n "$3" ] && [ -n "$5" ]; then
+        www_sync $gitpath $4 $gitpath/$5 $3;
+    fi
 ;;
 pullrestart)
+    archive_files $archive $gitpath;
     git_pull $gitpath/$1;
-    npm_install $gitpath/$4;
-    restart_node $scripts/node_script.sh $1 $6 $4;
+    if [ -e "$gitpath/$4/package.json" ]; then
+        npm_install $gitpath/$4;
+    fi
+    if [ -n "$6" ]; then
+        restart_node $scripts/node_script.sh $1 $6 $4;
+    fi
 ;;
 npminstall)
-    npm_install $gitpath/$4;
+    if [ -e "$gitpath/$4/package.json" ]; then
+        npm_install $gitpath/$4;
+    fi
 ;;
 backup)
     archive_files $archive $gitpath;
