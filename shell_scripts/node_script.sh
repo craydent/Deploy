@@ -5,11 +5,12 @@
 # $3=>node root folder/server file path
 # $4=>do not start
 
-sudo mkdir -p /var/craydentdeploy/git/$1;
-cd /var/craydentdeploy/git/$1;
+#sudo mkdir -p /var/craydentdeploy/git/$1;
+#cd /var/craydentdeploy/git/$1;
 process_list=(${2});
 list=$(echo ${process_list[@]}|tr " " "|")
 #kill node processes in process_list
+echo "terminating process $1";
 sudo ps aux | egrep "$list".*|awk '{print $2}' | xargs kill -9
 echo "$4 parameter4";
 if [ -z "$4" ]; then
