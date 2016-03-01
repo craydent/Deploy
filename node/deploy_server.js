@@ -89,7 +89,7 @@ io.on('connection', function (socket) {
                 " " + (appobj.www || "''") +
                 " " + (appobj.nodejs || "''") +
                 " " + (appobj.webdir || "''") +
-                " " + (appobj.servers.join(" ") || "''"),function(code, output, message){
+                " '" + appobj.servers.join(" ") + "'",function(code, output, message){
                 console.log(message);
                 io.emit("process_complete",{code:code,output:output});
                 delete deploying[name];
