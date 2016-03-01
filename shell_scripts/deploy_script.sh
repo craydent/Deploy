@@ -9,7 +9,7 @@
 
 path="/var/craydentdeploy";
 archive="$path/backup/$1";
-scripts="$PWD";
+scripts="$PWD/../shell_scripts";
 gitpath="$path/git/$1";
 
 #cd $path/git/$1;
