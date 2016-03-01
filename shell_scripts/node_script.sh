@@ -11,12 +11,12 @@ process_list=(${2});
 list=$(echo ${process_list[@]}|tr " " "|")
 #kill node processes in process_list
 echo "terminating process $1";
-sudo ps aux | egrep "$list".*|awk '{print $2}' | xargs kill -9
+ps aux | egrep "$list".*|awk '{print $2}' | xargs kill -9
 echo "$4 parameter4";
 if [ -z "$4" ]; then
 echo "/var/craydentdeploy/git/$1/$3/";
     logBasePath="/var/craydentdeploy/log/$1";
-    sudo mkdir -p "$logBasePath/archive";
+    mkdir -p "$logBasePath/archive";
 
     for i in "${process_list[@]}"; do
         cp $logBasePath/$i.log "$logBasePath/archive/$i.log.$(date +%F_%R)" &
