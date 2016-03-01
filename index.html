@@ -122,10 +122,9 @@
     </style>
     <script>
         function callServerAction(socketaction,dom,action) {
-//            var name = dom.innerText;
             var name = dom.getAttribute('data-appname');
             if (confirm('Are you sure you want to '+socketaction+' \n'+name)) {
-                //socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});
+                /*socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});*/
                 socket.emit(socketaction, {
                     passcode: window.location.search.substring(1),
                     name: name,
@@ -139,7 +138,6 @@
                 $('outputName,.output_window').removeClass('active');
                 $('outputName,.output_window').eq(index).addClass('active');
                 $('.output_window').eq(index).addClass('active');
-                //$('outputName,output_window')
             });
             var capp = new CraydentApp({
                 autoInit:true
