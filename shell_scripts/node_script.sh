@@ -13,6 +13,7 @@ list=$(echo ${process_list[@]}|tr " " "|")
 echo "terminating process $1";
 ps aux | egrep "$list".*|awk '{print $2}' | xargs kill -9
 echo "$4 parameter4";
+echo "after kill $1 $2 $3 $4";
 if [ -z "$4" ]; then
 echo "/var/craydentdeploy/git/$1/$3/";
     logBasePath="/var/craydentdeploy/log/$1";
