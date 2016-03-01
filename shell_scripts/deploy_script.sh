@@ -49,6 +49,7 @@ www_sync()
 restart_node()
 {
     echo 'restart node';
+    echo "$1 $2 $3 $4 $5";
     sudo bash $1 $2 $3 $4 $5;
 }
 
