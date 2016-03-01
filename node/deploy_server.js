@@ -70,12 +70,13 @@ io.on('connection', function (socket) {
         console.log(appobj);
 
         if (data.passcode == SAC && name && actions[data.action]) {
-            deploying[name] = true;;
-            _exec("su craydent_deployer -c \""+shelldir + "deploy_script.sh " + name + " " + actions[data.action] +
+            deploying[name] = true;
+            _exec("echo \"user is $USER\";",foo);
+            _exec(shelldir + "deploy_script.sh " + name + " " + actions[data.action] +
                 " " + (appobj.www || "''") +
                 " " + (appobj.nodejs || "''") +
                 " " + (appobj.webdir || "''") +
-                " '" + appobj.servers.join(" ") + "'\"",function(code, output, message){
+                " '" + appobj.servers.join(" ") + "'",function(code, output, message){
                 io.emit("process_complete",{code:code,output:output});
                 delete deploying[name];
             });
