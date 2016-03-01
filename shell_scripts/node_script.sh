@@ -11,6 +11,7 @@ process_list=(${2});
 list=$(echo ${process_list[@]}|tr " " "|")
 #kill node processes in process_list
 echo "terminating process $1";
+echo "before kill $1 $2 $3 $4";
 ps aux | egrep "$list".*|awk '{print $2}' | xargs kill -9
 echo "$4 parameter4";
 echo "after kill $1 $2 $3 $4";
