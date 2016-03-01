@@ -9,7 +9,7 @@
 
 path="/var/craydentdeploy";
 archive="$path/backup/$1";
-scripts=".";
+scripts="$PWD";
 gitpath="$path/git/$1";
 
 #cd $path/git/$1;
@@ -62,6 +62,7 @@ stop_node()
 # $1=>full node path
 npm_install()
 {
+    echo 'running npm install';
     cd $1;
     sudo npm install;
 }
