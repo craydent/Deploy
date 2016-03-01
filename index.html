@@ -26,9 +26,8 @@
             var d = $c.format(new Date(),'m/d/y h:i:s');
             document.getElementById(to).innerHTML += '<small>'+d+'</small> '+print;
             appStrs[to] += print;
-            //goJoe(appStrs[to]);
+            /*goJoe(appStrs[to]);*/
         }
-//        var socket = io('http://localhost:4900');
         socket.on('line', function (data) {
             var m =  data.file + ":"+data.line + "<br />";
             printTo(m,'tail');
