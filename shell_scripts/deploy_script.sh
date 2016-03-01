@@ -87,11 +87,11 @@ sync)
 ;;
 pull)
     archive_files $archive $gitpath;
-    git_pull $gitpath/$1;
+    git_pull $gitpath;
 ;;
 build)
     archive_files $archive $gitpath;
-    git_pull $gitpath/$1;
+    git_pull $gitpath;
     if [ -n "$3" ] && [ -n "$5" ]; then
         www_sync $gitpath $4 $gitpath/$5 $3;
     fi
@@ -109,14 +109,14 @@ stop)
 ;;
 pullsync)
     archive_files $archive $gitpath;
-    git_pull $gitpath/$1;
+    git_pull $gitpath;
     if [ -n "$3" ] && [ -n "$5" ]; then
         www_sync $gitpath $4 $gitpath/$5 $3;
     fi
 ;;
 pullrestart)
     archive_files $archive $gitpath;
-    git_pull $gitpath/$1;
+    git_pull $gitpath;
     if [ -e "$gitpath/$4/package.json" ]; then
         npm_install $gitpath/$4;
     fi
