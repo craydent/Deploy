@@ -16,20 +16,6 @@ var actions = {
         "sync":"sync"
     },
     deploying = {},
-    //apps = [
-    //    {'name': 'catnap',servers:[],filename:"catnap_server.js.log",logfile:["/var/scripts/logs/catnap/catnap_server.js.log"],size:{},fd:{},www:"/var/www/catnap.craydent.com/web",nodejs:"node",webdir:""},
-    //    {'name': 'deploy',servers:[],filename:"deploy_server.js.log",logfile:["/var/scripts/logs/deploy/deploy_server.js.log"],size:{},fd:{},www:"/var/www/deploy.craydent.com/web",nodejs:"node",webdir:""},
-    //    {'name': 'proto',servers:[],filename:"proto_server.js.log",logfile:["/var/scripts/logs/proto/proto_server.js.log"],size:{},fd:{},www:"/var/www/platform.craydent.com/web/",nodejs:"node",webdir:""},
-    //    {'name': 'joe',servers:[],www:"/var/www/craydent.com/web/jsonobjecteditor/",webdir:""},
-    //    {'name': 'proxy',servers:[],filename:"proxy_server.js.log",logfile:["/var/scripts/logs/proxy/proxy_server.js.log"],size:{},fd:{},nodejs:"node"},
-    //    {'name': 'shapow',servers:[],filename:"shapow_server.js.log",logfile:["/var/scripts/logs/shapow/shapow_server.js.log"],size:{},fd:{},www:"/var/www/shapow.net/web/",nodejs:"node",webdir:""}
-	//
-    //    //{'name': 'catnap',filename:"catnap_server.js.log",logfile:"logs/catnap_server.js.log",size:0,fd:null},
-    //    //{'name': 'deploy',filename:"deploy_server.js.log",logfile:"logs/deploy_server.js.log",size:0,fd:null},
-    //    //{'name': 'proto',filename:"proto_server.js.log",logfile:"logs/proto_server.js.log",size:0,fd:null},
-    //    //{'name': 'proxy',filename:"proxy_server.js.log",logfile:"logs/proxy_server.js.log",size:0,fd:null},
-    //    //{'name': 'shapow',filename:"shapow_server.js.log",logfile:"logs/shapow_server.js.log",size:0,fd:null}
-    //];
 
     apps = include('./craydent_deploy_config.json'),
     nconfig = include('./nodeconfig.js'),
@@ -85,12 +71,11 @@ io.on('connection', function (socket) {
 
         if (data.passcode == SAC && name && actions[data.action]) {
             deploying[name] = true;;
-            _exec(shelldir + "deploy_script.sh " + name + " " + actions[data.action] +
+            _exec("su craydent_deployer -c \""+shelldir + "deploy_script.sh " + name + " " + actions[data.action] +
                 " " + (appobj.www || "''") +
                 " " + (appobj.nodejs || "''") +
                 " " + (appobj.webdir || "''") +
-                " '" + appobj.servers.join(" ") + "'",function(code, output, message){
-                console.log(message,output,message);
+                " '" + appobj.servers.join(" ") + "'\"",function(code, output, message){
                 io.emit("process_complete",{code:code,output:output});
                 delete deploying[name];
             });

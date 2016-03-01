@@ -16,7 +16,7 @@ sudo mkdir -p $rootdir/craydentdeploy/log/;
 sudo mkdir -p $rootdir/craydentdeploy/backup/;
 sudo mkdir -p $rootdir/craydentdeploy/key/;
 #sudo mkdir -p $rootdir/scripts/;
-sudo chmod -R 770 /var/craydentdeploy/;
+sudo chmod -R 775 /var/craydentdeploy/;
 
 cd /var/craydentdeploy/key/;
 
