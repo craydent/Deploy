@@ -9,7 +9,7 @@ sudo mkdir -p /var/craydentdeploy/git/$1;
 cd /var/craydentdeploy/git/$1;
 process_list=(${2});
 list=$(echo ${process_list[@]}|tr " " "|")
-
+echo $list;
 #kill node processes in process_list
 sudo ps aux | egrep "$list".*|awk '{print $2}' | xargs kill -9
 
