@@ -2,6 +2,8 @@ require('shelljs/global');
 require('craydent/global');
 //io.set("origins","*:*");
 
+$c.DEBUG_MODE = true;
+
 var fs = require('fs');
 var actions = {
         "backup":"backup",
@@ -16,15 +18,14 @@ var actions = {
         "sync":"sync"
     },
     deploying = {},
-
     apps = include('./craydent_deploy_config.json'),
     nconfig = include('./nodeconfig.js'),
     shelldir = '../shell_scripts/';
 if (!apps) {
     apps = [{
-        "name": "craydent-deplo",
+        "name": "craydent-deploy",
         "servers": ["deploy_server.js"],
-        "logfile": ["/var/craydentdeploy/log/craydent-deplo/deploy_server.log"],
+        "logfile": ["/var/craydentdeploy/log/craydent-deploy/deploy_server.log"],
         "size":{},
         "fd":{},
         "www": "",
@@ -37,16 +38,25 @@ if (!apps) {
 GLOBAL.SOCKET_PORT = process.argv[2] || GLOBAL.SOCKET_PORT || 4900;
 GLOBAL.HTTP_PORT = process.argv[3] || GLOBAL.HTTP_PORT || 4800;
 GLOBAL.SAC = process.argv[4] || GLOBAL.SAC;
+GLOBAL.HTTP_AUTH_USERNAME = process.argv[5] || GLOBAL.HTTP_AUTH_USERNAME;
+GLOBAL.HTTP_AUTH_PASSWORD = process.argv[6] || GLOBAL.HTTP_AUTH_PASSWORD;
 
 if (nconfig === false) {
     GLOBAL.SAC = GLOBAL.SAC || cuid();
-    fs.writeFileSync("./nodeconfig.js", "GLOBAL.SOCKET_PORT = "+GLOBAL.SOCKET_PORT+";\nGLOBAL.HTTP_PORT = "+GLOBAL.HTTP_PORT+";\nGLOBAL.SAC = '" + GLOBAL.SAC + "';");
+    writeNodeConfig();
 }
-
+function writeNodeConfig() {
+    fs.writeFileSync("./nodeconfig.js", "GLOBAL.SOCKET_PORT = "+GLOBAL.SOCKET_PORT+
+        ";\nGLOBAL.HTTP_PORT = "+GLOBAL.HTTP_PORT+
+        ";\nGLOBAL.SAC = '" + GLOBAL.SAC + "';" +
+        "\nGLOBAL.HTTP_AUTH_USERNAME = '" + GLOBAL.HTTP_AUTH_USERNAME + "';" +
+        "\nGLOBAL.HTTP_AUTH_PASSWORD = '" + GLOBAL.HTTP_AUTH_PASSWORD + "';");
+}
 var io = require('socket.io')(SOCKET_PORT);//.of("deploy");
-console.log('socket start on port: ' + SOCKET_PORT);
+logit('socket start on port: ' + SOCKET_PORT);
 
 var config = {apps:apps,keys:["master_id_rsa"]};
+// store all keys to config.keys variable as a string of names
 try {
     config.keys = fs.readdirSync('/var/craydentdeploy/key/');
     for (var i = 0,len = config.keys.length; i < len; i++) {
@@ -57,33 +67,36 @@ try {
     }
 } catch(e) { }
 
+// start all log tails
 for (var i = 0, len = apps.length; i < len; i++) {
     start_app(apps[i]);
 }
-io.on('connection', function (socket) {
-    console.log('connection made');
-    socket.on('deploy', function(data){
-        console.log('deploy',data);
-        //var appobj = apps.filter(function(app){ return app.name == data.name;})[0] || {};
-        var appobj = apps.where({name: data.name})[0] || {};
-        var name = appobj.name;
-        console.log(appobj);
+function buildit(data,callback){
+    logit('deploy',data);
+    var appobj = apps.where({name: data.name})[0] || {};
+    var name = appobj.name;
+    logit(appobj);
 
-        if (data.passcode == SAC && name && actions[data.action]) {
-            deploying[name] = true;
-            _exec("echo \"user is $USER\";",foo);
-            _exec(shelldir + "deploy_script.sh " + name + " " + actions[data.action] +
-                " " + (appobj.www || "''") +
-                " " + (appobj.nodejs || "''") +
-                " " + (appobj.webdir || "''") +
-                " '" + appobj.servers.join(" ") + "'",function(code, output, message){
-                io.emit("process_complete",{code:code,output:output});
-                delete deploying[name];
-            });
-        }
+    if (data.passcode == SAC && name && actions[data.action]) {
+        deploying[name] = true;
+        _exec("echo \"user is $USER\";",foo);
+        _exec(shelldir + "deploy_script.sh " + name + " " + actions[data.action] +
+            " " + (appobj.www || "''") +
+            " " + (appobj.nodejs || "''") +
+            " " + (appobj.webdir || "''") +
+            " '" + appobj.servers.join(" ") + "'", callback);
+    }
+}
+io.on('connection', function (socket) {
+    logit('connection made');
+    socket.on('deploy', function(data){
+        buildit(data, function(code, output, message){
+            io.emit("process_complete",{code:code,output:output});
+            delete deploying[name];
+        });
     });
     socket.on("gitadd", function(data){
-        console.log('gitadd',data);
+        logit('gitadd',data);
         if (data.passcode == SAC) {
             var appobj = apps.where({name: data.name})[0];
             if (appobj) {
@@ -113,33 +126,38 @@ io.on('connection', function (socket) {
         }
     });
     socket.on("sshkey", function(data){
-        console.log('sshkey',data);
+        logit('sshkey',data);
         if (data.passcode == SAC) {
             _exec(shelldir + "sshkey_script.sh " + data.name + " " + data.email,function (code,output,message) {
-                console.log(message);
+                logit(message);
                 var pubkey = data.name+'.pub';
                 var path = '/var/craydentdeploy/key/'+pubkey;
                 fs.exists(path,function(exists){
-                    if (exists) {
-                        fs.readFile(path, 'utf8', function (err,data) {
-                            if (err) {
-                                return socket.emit("showsshkey",{error:true,message:err});
-                            }
-                            config.keys.push(pubkey);
-                            socket.emit("showsshkey",{content:data,name:pubkey});
-                        });
-                    }
+                    if (!exists) { return }
+                    fs.readFile(path, 'utf8', function (err,data) {
+                        if (err) {
+                            return socket.emit("showsshkey",{error:true,message:err});
+                        }
+                        config.keys.push(pubkey);
+                        socket.emit("showsshkey",{content:data,name:pubkey});
+                    });
                 });
 
             });
         }
     });
     socket.on("init", function(data){
-        console.log('initializing',data);
-        if (!nconfig || data.passcode == SAC) {
+        logit('initializing', data);
+        if (nconfig === false || data.passcode == SAC) {
             nconfig = true;
+            GLOBAL.SOCKET_PORT = parseInt(data.ws_port);
+            GLOBAL.HTTP_PORT = parseInt(data.http_port);
+            GLOBAL.SAC = data.sac;
+            GLOBAL.HTTP_AUTH_USERNAME = data.http_username;
+            GLOBAL.HTTP_AUTH_PASSWORD = data.http_password;
+            writeNodeConfig();
             _exec("echo '"+data.password+"' | sudo -S bash " + shelldir + "initial_script.sh " + data.email + " " + (data.rootdir || "/var") + " $USER",function(code,output,message){
-                console.log(message);
+                logit(message);
                 socket.emit("initialized",{error:false});
             });
         } else {
@@ -150,14 +168,13 @@ io.on('connection', function (socket) {
         if (data.passcode == SAC) {
             var path = '/var/craydentdeploy/key/' + data.name;
             fs.exists(path, function (exists) {
-                if (exists) {
-                    fs.readFile(path, 'utf8', function (err, dt) {
-                        if (err) {
-                            return socket.emit("showsshkey", {error: true, message: err});
-                        }
-                        socket.emit("showsshkey", {content: dt,name:data.name});
-                    });
-                }
+                if (!exists) { return; }
+                fs.readFile(path, 'utf8', function (err, dt) {
+                    if (err) {
+                        return socket.emit("showsshkey", {error: true, message: err});
+                    }
+                    socket.emit("showsshkey", {content: dt,name:data.name});
+                });
             });
         }
     });
@@ -168,6 +185,58 @@ io.on('connection', function (socket) {
         });
     }
 });
+
+// create http server
+// the front facing files are in the public folder
+var server = $c.createServer(function (req, res) {
+    var self = this,
+        path = self.SERVER_PATH,
+        auth = req.headers['authorization'],
+        auth_header = 'WWW-Authenticate: Basic realm="Deployer Secure Area"';
+    if (path.contains('?')) { path = path.split('?')[0]; }
+    if (path.endsWith('/')) { path += "index.html"; }
+    path = (path.startsWith('/') ? "../public" : "../public/") + path;
+    path.endsWith('.html') && self.header("Content-Type: text/html");
+
+    if (!self.SERVER_PATH.contains(GLOBAL.SAC) && path.endsWith('.html')) {
+        if (!auth) {     // No Authorization header was passed in so it's the first time the browser hit us
+            self.header(auth_header);
+            return self.end(401, '<html><body>You are trying to access a secure area.  Please login.</body></html>');
+        }
+
+        var encoded = auth.split(' ')[1];   // Split on a space, the original auth looks like  "Basic Y2hhcmxlczoxMjM0NQ==" and we need the 2nd part
+
+        var buf = new Buffer(encoded, 'base64'),
+            plain_auth = buf.toString(),
+            creds = plain_auth.split(':'),
+            username = creds[0],
+            password = creds[1];
+
+        if (username != GLOBAL.HTTP_AUTH_USERNAME || password != GLOBAL.HTTP_AUTH_PASSWORD) {
+            self.header(auth_header);
+            // res.statusCode = 403;   // or alternatively just reject them altogether with a 403 Forbidden
+            self.end(401, '<html><body>You are not authorized to access this page</body></html>');
+        }
+    }
+    fs.exists(path,function(exists){
+        if (!exists) { return self.end(); }
+        return fs.readFile(path, 'utf8', function (err,data) {
+            if (err) { return self.end(); }
+            return self.end(fillTemplate(data,config));
+        });
+
+    });
+    self.DEFER_END = true;
+}).listen(HTTP_PORT);
+server.get("/build/${name}/${passcode}", function (req, res, params) {
+    var self = this;
+    params.action = "build";
+    buildit(params,function(code, output){ self.send(!code ? 200 : 500, {code:code,output:output}); });
+});
+logit('http start on port: ' + HTTP_PORT);
+
+
+// helper functions
 function pollProcess(name) {
     if (!deploying[name]){
         exec("ps aux | grep " + name,function (code, output, message) {
@@ -177,8 +246,10 @@ function pollProcess(name) {
     }
 }
 function start_app(obj) {
-    if (!obj.logfile) { return; }
+    // do not proceed if there is no log file
+    if (!obj.logfile && !obj.logfile.length) { return; }
     var files = obj.logfile;
+    // loop through each log file and start watching the logs
     for (var i = 0, len = files.length; i < len; i++) {
         var file = files[i];
         (function(fname) {
@@ -188,12 +259,10 @@ function start_app(obj) {
             obj.fd[fname] = fs.openSync(fname, 'r');
             obj.size[fname] = fs.statSync(fname).size;
             fs.watch(fname, function (action, filename) {
-                if (action != "change") {
-                    return;
-                }
+                if (action != "change") { return; }
                 fs.stat(fname, function (err, stats) {
                     if (err) {
-                        io.emit('error', err);
+                        return io.emit('error', err);
                     }
                     var cfsize = stats.size,
                         size = obj.size[fname] || 0;
@@ -208,30 +277,3 @@ function start_app(obj) {
         })(file);
     }
 }
-
-// create http server
-$c.createServer(function(req,res){
-    var self = this,
-        path = self.SERVER_PATH;
-    if (path.contains('?')) {
-        path = path.split('?')[0];
-    }
-    if (path.endsWith('/')) {
-        path += "index.html";
-    }
-    self.header("Content-Type: text/html");
-    path = (path.startsWith('/') ? ".." : "../") + path;
-    fs.exists(path,function(exists){
-        if (exists) {
-            return fs.readFile(path, 'utf8', function (err,data) {
-                if (err) {
-                    return self.end();
-                }
-                return self.end(fillTemplate(data,config));
-            });
-        }
-        return self.end();
-    });
-    self.DEFER_END = true;
-}).listen(HTTP_PORT);
-console.log('http start on port: ' + HTTP_PORT);

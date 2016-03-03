@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Project</title>
+</head>
+<body>
+    <div>Root directory to install (default is /var)</div>
+    <input id="rootdir" type="text" placeholder="root directory" />
+    <div>Email ssh key</div>
+    <input id="email" type="text" placeholder="Email" />
+
+    <div>HTTP Authentication username (default: admin)</div>
+    <input id="ausername" type="text" placeholder="HTTP auth username" />
+
+    <div>HTTP Authentication password (default: admin)</div>
+    <input id="apassword" type="password" placeholder="HTTP auth password" />
+
+    <div>HTTP port to listen on (default: 4800)</div>
+    <input id="httpport" type="text" placeholder="Port number" />
+
+    <div>Websocket port to listen on (default: 4900)</div>
+    <input id="wsport" type="text" placeholder="Port number" />
+
+    <div>System Administrator Key</div>
+    <input id="key" type="text" placeholder="GUID" />
+
+    <div>Password to set up directories (this is used once and not stored)</div>
+    <input id="sudo" type="password" placeholder="Sudo password" />
+
+    <button onclick="init();">Submit</button>
+
+    <script src=":4900/socket.io/socket.io.js"></script>
+    <script src="http://craydent.com/JsonObjectEditor/_joecraydent.js"></script>
+    <script>
+        var guid = cuid();
+        var socket = io($l.protocol + "//" + $l.hostname + ':4900');
+        socket.on('initialized',function(data){
+            if (data.error) {
+                return alert('init failed');
+            }
+            alert('initialized');
+        });
+        $('key').setAttribute('placeholder', guid);
+        function init() {
+            socket.emit('init',{
+                rootdir:$('rootdir').value,
+                email:$('email').value,
+                password:$('sudo').value,
+                http_username:$('ausername').value || "admin",
+                http_password:$('apassword').value || "admin",
+                http_port:$('httpport').value || 4800,
+                ws_port:$('wsport').value || 4900,
+                sac:$('key').value || guid
+            });
+        }
+    </script>
+</body>
+</html>

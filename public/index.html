@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>cDeploy</title>
+    <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://craydent.com/JsonObjectEditor/capp.css"/>
+    <link rel="stylesheet" href="/JsonObjectEditor/capp.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <script src=":4900/socket.io/socket.io.js"></script>
+    <!--<script src="http://localhost:4900/socket.io/socket.io.js"></script>-->
+<!--    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="http://craydent.com/resources/library/craydent-1.8.0.js"></script>-->
+    <script src="http://craydent.com/JsonObjectEditor/_joecraydent.js"></script>
+    <script src="http://craydent.com/JsonObjectEditor/capp.js"></script>
+    <script src="/JsonObjectEditor/capp.js"></script>
+
+    <script src="js/main.js"></script>
+</head>
+<body bgcolor="#0099aa">
+<capp-wrapper>
+
+
+    <capp-header class="capp-retro">
+        <capp-header-bonus ></capp-header-bonus>
+        <capp-craydent-icon></capp-craydent-icon>
+        <capp-title>Deploy</capp-title>
+    </capp-header>
+    <capp-body>
+        <capp-panel class="capp-bg-dark">
+            <capp-button  class="capp-panel-toggle">
+                <capp-button-icon><-></capp-button-icon>
+                <capp-button-label>expand / contract</capp-button-label>
+            </capp-button>
+            <capp-menu>
+                <capp-menu-label>
+                    <capp-button-icon>Apps</capp-button-icon>
+                    <capp-button-label>Deployable Apps</capp-button-label>
+
+                </capp-menu-label>
+                ${foreach ${app} in ${apps}}
+                <capp-menu-option onclick="callServerAction('deploy',this,'build')">${app.name}</capp-menu-option>
+                ${end foreach}
+            </capp-menu>
+
+<!--            <appMenuLabel>Logs</appMenuLabel>
+            <capp-button onclick="callServerAction('tail',this)">catnap</capp-button>
+            <capp-button onclick="callServerAction('tail',this)">deploy</capp-button>
+            <capp-button onclick="callServerAction('tail',this)">proto</capp-button>
+            <capp-button onclick="callServerAction('tail',this)">proxy</capp-button>
+            <capp-button onclick="callServerAction('tail',this)">shapow</capp-button>-->
+            <capp-button  onclick="reload_config();">
+                <capp-button-icon><img src="http://craydent.com/JsonObjectEditor/img/svgs/__reload.svg" class="svg"/></capp-button-icon>
+                <capp-button-label>Reload Proxy Config</capp-button-label>
+            </capp-button>
+        </capp-panel>
+        <capp-view id="appOutputs">
+                <outputsMenu>
+
+                    <outputName class="active">Tail</outputName>
+                    <outputName>Errors</outputName>
+                    <outputName>STD Out</outputName>
+
+                </outputsMenu>
+
+                <div id="tail" class="output_window active"></div>
+                <div id="tail_error" class="output_window">Errors:<br /></div>
+                <div id="out" class="output_window">STD Out:<br /></div>
+        </capp-view>
+
+    </capp-body>
+    <appMenu>
+<!--        <appMenuLabel>Apps</appMenuLabel>
+        <capp-button onclick="callServerAction('deploy',this,'build')">catnap</capp-button>
+        <capp-button onclick="callServerAction('deploy',this,'build')">deploy</capp-button>
+        <capp-button onclick="callServerAction('deploy',this,'pullsync')">proto</capp-button>
+        <capp-button onclick="callServerAction('deploy',this,'pullrestart')">proxy</capp-button>
+        <capp-button onclick="callServerAction('deploy',this,'build')">shapow</capp-button>
+        <capp-button onclick="callServerAction('deploy',this,'pullsync')">joe</capp-button>-->
+
+<!--        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+            deploy
+        </div>
+        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullsync'});">
+            proto
+        </div>
+        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullrestart'});">
+            proxy
+        </div>
+        <div onclick="socket.emit('deploy',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+            shapow
+        </div>-->
+<!--
+        <appMenuLabel>Logs</appMenuLabel>
+        <capp-button onclick="callServerAction('tail',this)">catnap</capp-button>
+        <capp-button onclick="callServerAction('tail',this)">deploy</capp-button>
+        <capp-button onclick="callServerAction('tail',this)">proto</capp-button>
+        <capp-button onclick="callServerAction('tail',this)">proxy</capp-button>
+        <capp-button onclick="callServerAction('tail',this)">shapow</capp-button>-->
+
+      <!--  <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+            catnap
+        </div>
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+            deploy
+        </div>
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullsync'});">
+            proto
+        </div>
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'pullrestart'});">
+            proxy
+        </div>
+        <div onclick="socket.emit('tail',{passcode:window.location.search.substring(1),name:this.innerText,action:'build'});">
+            shapow
+        </div>-->
+<!--        <div onclick="reload_config();" style="margin-top: 40px;">
+            Reload Proxy Config
+        </div>-->
+    </appMenu>
+
+
+</capp-wrapper>
+</body>
+</html>

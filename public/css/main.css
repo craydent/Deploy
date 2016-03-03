@@ -1,0 +1,57 @@
+.output_window {
+    position:absolute;
+    top:40px;
+    left:0;
+    bottom:0;
+    right:0;
+    display:none;
+    overflow:auto;
+}
+.output_window.active{
+    display: block;
+}
+.apps {
+    width: 150px;
+    float: left;
+}
+.apps div {
+    cursor: pointer;
+    margin:10px;
+}
+
+#appOutputs{
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    left: 60px;
+    bottom: 10px;
+    border: 1px solid #fff;
+    padding:50px 10px 0 10px;
+    overflow:auto;
+    color:#eee;
+    /* margin: 5px; */
+
+}
+
+outputsMenu{
+    display:block;
+    background:rgba(255,255,255,.2);
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+}
+
+outputName{
+    width:33%;
+    width:calc(100%/3);
+    float:left;
+    box-sizing: border-box;
+    padding:10px;
+    cursor:pointer;
+    transition:.2s;
+}
+outputName.active{
+    background:rgba(255,255,255,.2);
+    cursor:auto;
+}
