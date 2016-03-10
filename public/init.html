@@ -3,33 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <title>Add Project</title>
+    <link rel="stylesheet" href="http://craydent.com/JsonObjectEditor/capp.css"/>
+    <script src="http://craydent.com/JsonObjectEditor/_joeinclude.js"></script>
+    <script src="http://craydent.com/JsonObjectEditor/capp.js"></script>
 </head>
-<body>
-    <div>Root directory to install (default is /var)</div>
-    <input id="rootdir" type="text" placeholder="root directory" />
-    <div>Email ssh key</div>
-    <input id="email" type="text" placeholder="Email" />
+<body bgcolor="#0099aa">
+<capp-wrapper>
+    <capp-header class="capp-retro">
+        <capp-header-bonus ></capp-header-bonus>
+        <capp-craydent-icon></capp-craydent-icon>
+        <capp-title>Deploy > Add Project</capp-title>
+    </capp-header>
+    <capp-body>
+        <div>Root directory to install (default is /var)</div>
+        <input id="rootdir" type="text" placeholder="root directory" />
+        <div>Email ssh key</div>
+        <input id="email" type="text" placeholder="Email" />
 
-    <div>HTTP Authentication username (default: admin)</div>
-    <input id="ausername" type="text" placeholder="HTTP auth username" />
+        <div>HTTP Authentication username (default: admin)</div>
+        <input id="ausername" type="text" placeholder="HTTP auth username" />
 
-    <div>HTTP Authentication password (default: admin)</div>
-    <input id="apassword" type="password" placeholder="HTTP auth password" />
+        <div>HTTP Authentication password (default: admin)</div>
+        <input id="apassword" type="password" placeholder="HTTP auth password" />
 
-    <div>HTTP port to listen on (default: 4800)</div>
-    <input id="httpport" type="text" placeholder="Port number" />
+        <div>HTTP port to listen on (default: 4800)</div>
+        <input id="httpport" type="text" placeholder="Port number" />
 
-    <div>Websocket port to listen on (default: 4900)</div>
-    <input id="wsport" type="text" placeholder="Port number" />
+        <div>Websocket port to listen on (default: 4900)</div>
+        <input id="wsport" type="text" placeholder="Port number" />
 
-    <div>System Administrator Key</div>
-    <input id="key" type="text" placeholder="GUID" />
+        <div>System Administrator Key</div>
+        <input id="key" type="text" placeholder="GUID" />
 
-    <div>Password to set up directories (this is used once and not stored)</div>
-    <input id="sudo" type="password" placeholder="Sudo password" />
+        <div>Password to set up directories (this is used once and not stored)</div>
+        <input id="sudo" type="password" placeholder="Sudo password" />
 
-    <button onclick="init();">Submit</button>
+        <button onclick="init();">Submit</button>
+        <capp-dashboard>
 
+
+        </capp-dashboard>
+        <capp-view id="joeHolder"></capp-view>
+    </capp-body>
+
+</capp-wrapper>
     <script src=":4900/socket.io/socket.io.js"></script>
     <script src="http://craydent.com/JsonObjectEditor/_joecraydent.js"></script>
     <script>
