@@ -1,3 +1,4 @@
 /craydent-deploy.iml
 /.idea
 /node/node_modules
+node_modules/
