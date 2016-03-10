@@ -38,19 +38,12 @@ if (!apps) {
 GLOBAL.SOCKET_PORT = process.argv[2] || GLOBAL.SOCKET_PORT || 4900;
 GLOBAL.HTTP_PORT = process.argv[3] || GLOBAL.HTTP_PORT || 4800;
 GLOBAL.SAC = process.argv[4] || GLOBAL.SAC;
-GLOBAL.HTTP_AUTH_USERNAME = process.argv[5] || GLOBAL.HTTP_AUTH_USERNAME;
-GLOBAL.HTTP_AUTH_PASSWORD = process.argv[6] || GLOBAL.HTTP_AUTH_PASSWORD;
+GLOBAL.HTTP_AUTH_USERNAME = process.argv[5] || GLOBAL.HTTP_AUTH_USERNAME || "admin";
+GLOBAL.HTTP_AUTH_PASSWORD = process.argv[6] || GLOBAL.HTTP_AUTH_PASSWORD || "admin";
 
 if (nconfig === false) {
     GLOBAL.SAC = GLOBAL.SAC || cuid();
     writeNodeConfig();
-}
-function writeNodeConfig() {
-    fs.writeFileSync("./nodeconfig.js", "GLOBAL.SOCKET_PORT = "+GLOBAL.SOCKET_PORT+
-        ";\nGLOBAL.HTTP_PORT = "+GLOBAL.HTTP_PORT+
-        ";\nGLOBAL.SAC = '" + GLOBAL.SAC + "';" +
-        "\nGLOBAL.HTTP_AUTH_USERNAME = '" + GLOBAL.HTTP_AUTH_USERNAME + "';" +
-        "\nGLOBAL.HTTP_AUTH_PASSWORD = '" + GLOBAL.HTTP_AUTH_PASSWORD + "';");
 }
 var io = require('socket.io')(SOCKET_PORT);//.of("deploy");
 logit('socket start on port: ' + SOCKET_PORT);
@@ -102,8 +95,9 @@ io.on('connection', function (socket) {
             if (appobj) {
                 return io.emit("add_error",{code:'1',output:data.name + " already exists."});
             }
-            var projectName = data.git_address.replace(/.*\/(.*?)\.git$/,'$1');
-            _exec(shelldir + "git_script.sh " + data.git_address + " " + projectName + " " + data.name + " " + (data.key_name || "master_id_rsa").replace(/\.pub$/,''), function(code,output,message) {
+            var project_name = data.git_address.replace(/.*\/(.*?)\.git$/,'$1'),
+                repo_owner = data.git_address.replace(/.*?\.com[\/:](.*?)\/.*\.git$/,'$1');
+            _exec(shelldir + "git_script.sh " + data.git_address + " " + project_name + " " + data.name + " " + (data.key_name || "master_id_rsa").replace(/\.pub$/,''), function(code,output,message) {
                 var logFiles = [];
                 var servers = $c.isArray(data.servers) ? data.servers : [];
                 for (var i = 0, len = servers.length; i < len; i++) {
@@ -123,6 +117,23 @@ io.on('connection', function (socket) {
                 });
                 fs.writeFileSync("./craydent_deploy_config.json", JSON.stringify(apps));
             });
+            getsshkey(data.name,function(dt){
+                var params = {
+                    repo_owner:repo_owner,
+                    project_name:project_name,
+                    git_address:data.git_address,
+                    git_user:data.git_user,
+                    git_password:data.git_password,
+                    name:data.name,
+                    content:dt.content,
+                    key_name:dt.name,
+                    host:socket.handshake.headers.host.split(':')[0],
+                    protocol: socket.handshake.headers.origin.contains('https') ? "https" : "http"
+                };
+                createDeployKey(params);
+                createWebhook(params);
+            });
+
         }
     });
     socket.on("sshkey", function(data){
@@ -152,9 +163,10 @@ io.on('connection', function (socket) {
             nconfig = true;
             GLOBAL.SOCKET_PORT = parseInt(data.ws_port);
             GLOBAL.HTTP_PORT = parseInt(data.http_port);
-            GLOBAL.SAC = data.sac;
+            GLOBAL.SAC = data.passcode;
             GLOBAL.HTTP_AUTH_USERNAME = data.http_username;
             GLOBAL.HTTP_AUTH_PASSWORD = data.http_password;
+            GLOBAL.EMAIL = data.email;
             writeNodeConfig();
             _exec("echo '"+data.password+"' | sudo -S bash " + shelldir + "initial_script.sh " + data.email + " " + (data.rootdir || "/var") + " $USER",function(code,output,message){
                 logit(message);
@@ -166,16 +178,19 @@ io.on('connection', function (socket) {
     });
     socket.on("getsshkey",function(data){
         if (data.passcode == SAC) {
-            var path = '/var/craydentdeploy/key/' + data.name;
-            fs.exists(path, function (exists) {
-                if (!exists) { return; }
-                fs.readFile(path, 'utf8', function (err, dt) {
-                    if (err) {
-                        return socket.emit("showsshkey", {error: true, message: err});
-                    }
-                    socket.emit("showsshkey", {content: dt,name:data.name});
-                });
+            getsshkey(data.name,function(dt){
+                socket.emit("showsshkey", dt);
             });
+            //var path = '/var/craydentdeploy/key/' + data.name;
+            //fs.exists(path, function (exists) {
+            //    if (!exists) { return; }
+            //    fs.readFile(path, 'utf8', function (err, dt) {
+            //        if (err) {
+            //            return socket.emit("showsshkey", {error: true, message: err});
+            //        }
+            //        socket.emit("showsshkey", {content: dt,name:data.name});
+            //    });
+            //});
         }
     });
     function _exec (process, func) {
@@ -228,7 +243,7 @@ var server = $c.createServer(function (req, res) {
     });
     self.DEFER_END = true;
 }).listen(HTTP_PORT);
-server.get("/build/${name}/${passcode}", function (req, res, params) {
+server.all("/build/${name}/${passcode}", function (req, res, params) {
     var self = this;
     params.action = "build";
     buildit(params,function(code, output){ self.send(!code ? 200 : 500, {code:code,output:output}); });
@@ -275,5 +290,98 @@ function start_app(obj) {
                 });
             });
         })(file);
+    }
+}
+function writeNodeConfig() {
+    fs.writeFileSync("./nodeconfig.js", "GLOBAL.SOCKET_PORT = "+GLOBAL.SOCKET_PORT+
+        ";\nGLOBAL.HTTP_PORT = "+GLOBAL.HTTP_PORT+
+        ";\nGLOBAL.SAC = '" + GLOBAL.SAC + "';" +
+        "\nGLOBAL.HTTP_AUTH_USERNAME = '" + (GLOBAL.HTTP_AUTH_USERNAME || "admin") + "';" +
+        "\nGLOBAL.HTTP_AUTH_PASSWORD = '" + (GLOBAL.HTTP_AUTH_PASSWORD || "admin") + "';" +
+        "\nGLOBAL.EMAIL = '" + (GLOBAL.EMAIL || "" ) + "';");
+}
+function getsshkey(name, callback){
+    var path = '/var/craydentdeploy/key/' + name;
+    fs.exists(path, function (exists) {
+        if (!exists) { return; }
+        fs.readFile(path, 'utf8', function (err, dt) {
+            if (err) {
+                return callback("showsshkey", {error: true, message: err});
+            }
+           callback({content: dt,name:name});
+        });
+    });
+}
+function createDeployKey(data) {
+    if (data.git_address.contains('git@github.com')) {
+        return $c.ajax({
+            url: "https://api.github.com/repos/" + data.repo_owner + "/" + data.project_name + "/keys",
+            headers: {
+                'Authorization': 'Basic ' + new Buffer(data.git_user + ":" + data.git_password).toString('base64'),
+                'Content-Type': 'application/json',
+                'User-Agent': data.repo_owner + "-" + data.project_name
+            },
+            method: "POST",
+            data: {"title": data.key_name, "key": data.content, "read_only": true},
+            onsuccess: function (data) {
+                console.log(data);
+            }
+        });
+    } else if (data.git_address.contains('git@bitbucket.org')) {
+        return $c.ajax({
+            url: "https://api.bitbucket.org/1.0/repositories/" + data.repo_owner + "/" + data.project_name + "/deploy-keys",
+            headers: {
+                'Authorization': 'Basic ' + new Buffer(data.git_user + ":" + data.git_password).toString('base64'),
+                'Content-Type': 'application/json',
+                'User-Agent': data.repo_owner + "-" + data.project_name
+            },
+            method: "POST",
+            data: {"label": data.key_name, "key": data.content},
+            onsuccess: function (data) {
+                console.log(data);
+            }
+        });
+    }
+}
+function createWebhook(data) {
+    var url = data.protocol + "://" + data.host + ":" + GLOBAL.HTTP_PORT + "/build/" + data.name + "/" + GLOBAL.SAC;
+    if (data.git_address.contains('git@github.com')) {
+        return $c.ajax({
+            url: "https://api.github.com/repos/" + data.repo_owner + "/" + data.project_name + "/hooks",
+            headers: {
+                'Authorization': 'Basic ' + new Buffer(data.git_user + ":" + data.git_password).toString('base64'),
+                'Content-Type': 'application/json',
+                'User-Agent': data.repo_owner + "-" + data.project_name
+            },
+            method: "POST",
+            data: {
+                name: "web",
+                config: {url: url, content_type: "json"},
+                events: ["push", "pull_request"],
+                active: true
+            },
+            onsuccess: function (data) {
+                console.log(data);
+            }
+        });
+    } else if (data.git_address.contains('git@bitbucket.org')) {
+        return $c.ajax({
+            url: "https://api.bitbucket.org/2.0/repositories/" + data.repo_owner + "/" + data.project_name + "/hooks",
+            headers: {
+                'Authorization': 'Basic ' + new Buffer(data.git_user + ":" + data.git_password).toString('base64'),
+                'Content-Type': 'application/json',
+                'User-Agent': data.repo_owner + "-" + data.project_name
+            },
+            method: "POST",
+            data: {
+                description: "Webhook for Craydent Deploy - " + data.name,
+                url: url,
+                events: ["repo:push", "pullrequest:fulfilled"],
+                active: true
+            },
+            onsuccess: function (data) {
+                console.log(data);
+            }
+        });
     }
 }

@@ -35,6 +35,8 @@
                 passcode: window.location.search.substring(1),
                 'name': $('pname').value,
                 git_address:$('gitaddress').value,
+                git_user:$('gitu').value,
+                git_password:$('gitp').value,
                 key_name:$('kname').value,
                 servers: servers,
                 www:$('wwwdir').value,
@@ -79,6 +81,12 @@
     <input id="webdir" type="text" placeholder="Local Web Directory" />
     <div>Email to receive notifications</div>
     <input id="email" type="text" placeholder="Email" />
+
+
+    <div>Git username</div>
+    <input id="gitu" type="text" placeholder="Git Username" />
+    <div>Git password</div>
+    <input id="gitp" type="text" placeholder="Git Password" />
 
     <button onclick="create();">Add Project</button>
 </body>
