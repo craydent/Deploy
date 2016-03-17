@@ -90,7 +90,7 @@ io.on('connection', function (socket) {
     });
     socket.on("gitadd", function(data){
         logit('gitadd',data);
-        if (data.passcode == SAC) {
+        if (data.passcode == SAC || data.sac == SAC) {
             var appobj = apps.where({name: data.name})[0];
             if (appobj) {
                 return io.emit("add_error",{code:'1',output:data.name + " already exists."});
@@ -138,7 +138,7 @@ io.on('connection', function (socket) {
     });
     socket.on("sshkey", function(data){
         logit('sshkey',data);
-        if (data.passcode == SAC) {
+        if (data.passcode == SAC || data.sac == SAC) {
             _exec(shelldir + "sshkey_script.sh " + data.name + " " + data.email,function (code,output,message) {
                 logit(message);
                 var pubkey = data.name+'.pub';
@@ -159,7 +159,7 @@ io.on('connection', function (socket) {
     });
     socket.on("init", function(data){
         logit('initializing', data);
-        if (nconfig === false || data.passcode == SAC) {
+        if (nconfig === false || data.passcode == SAC || data.sac == SAC) {
             nconfig = true;
             GLOBAL.SOCKET_PORT = parseInt(data.ws_port);
             GLOBAL.HTTP_PORT = parseInt(data.http_port);
@@ -177,7 +177,7 @@ io.on('connection', function (socket) {
         }
     });
     socket.on("getsshkey",function(data){
-        if (data.passcode == SAC) {
+        if (data.passcode == SAC || data.sac == SAC) {
             getsshkey(data.name,function(dt){
                 socket.emit("showsshkey", dt);
             });
