@@ -2,26 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin</title>
+    <title>cDeploy | Admin</title>
     <script src=":4900/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="http://craydent.com/JsonObjectEditor/capp.css"/>
-    <script>var web_dir = 'http://www.craydent.com/jsonobjecteditor/'</script>
-<!--
-    <script>var web_dir = '//localhost:2099/JsonObjectEditor/'</script>
--->
+
+    <script>
+        var web_dir = 'http://www.craydent.com/jsonobjecteditor/';
+        //var web_dir = '//localhost:2099/JsonObjectEditor/';
+    </script>
+
     <script src="http://craydent.com/JsonObjectEditor/_joeinclude.js"></script>
-<!--
-    <script src=":2099/JsonObjectEditor/_joeinclude.js"></script>
--->
     <script src="http://craydent.com/JsonObjectEditor/capp.js"></script>
-<!--    <script src="http://craydent.com/JsonObjectEditor/_joecraydent.js"></script>-->
 </head>
 <body bgcolor="#0099aa">
 <capp-wrapper>
     <capp-header class="capp-retro">
         <capp-header-bonus ></capp-header-bonus>
         <capp-craydent-icon></capp-craydent-icon>
-        <capp-title>Deploy > Admin</capp-title>
+        <capp-title>cDeploy Admin</capp-title>
+        <capp-button onclick="goJoe({},{schema:'config'});">Config</capp-button>
+        <capp-button onclick="goJoe({},{schema:'project'});">Add Project</capp-button>
     </capp-header>
     <capp-body>
         <capp-panel class="capp-bg-dark">
@@ -29,14 +29,14 @@
                 <capp-button-icon><-></capp-button-icon>
                 <capp-button-label>expand / contract</capp-button-label>
             </capp-button>
-                <capp-button onclick="goJoe({},{schema:'project'});">
+                <!--<capp-button onclick="goJoe({},{schema:'project'});">
                     <capp-button-icon>Add</capp-button-icon>
                     <capp-button-label>Add Project</capp-button-label>
-                </capp-button>
+                </capp-button>-->
         </capp-panel>
 
         <capp-dashboard style='margin-left:50px'>
-            <capp-card class="w3 h3">
+            <!--<capp-card class="w3 h3">
                 <capp-title>Previous Form (for reference)</capp-title>
                 <capp-content>
                 <div>Root directory to install (default is /var)</div>
@@ -65,7 +65,7 @@
 
                 <button onclick="init();">Submit</button>
                 </capp-content>
-            </capp-card>
+            </capp-card>-->
 
         </capp-dashboard>
         <capp-view id="joeHolder"></capp-view>
