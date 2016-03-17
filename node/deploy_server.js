@@ -163,7 +163,7 @@ io.on('connection', function (socket) {
             nconfig = true;
             GLOBAL.SOCKET_PORT = parseInt(data.ws_port);
             GLOBAL.HTTP_PORT = parseInt(data.http_port);
-            GLOBAL.SAC = data.passcode;
+            GLOBAL.SAC = data.passcode || data.sac;
             GLOBAL.HTTP_AUTH_USERNAME = data.http_username;
             GLOBAL.HTTP_AUTH_PASSWORD = data.http_password;
             GLOBAL.EMAIL = data.email;
