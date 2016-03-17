@@ -31,7 +31,6 @@ var schemas = {
                     return 'add a name -> click button<br/> show list below';
                 }},
                 {name:'key_name',display:'Key Name',select:'STRING of keyname'},
-                //{name:'ssh_email',display:'email'},
 
                 
                 {label:'git'},
@@ -51,12 +50,7 @@ var schemas = {
                     properties:['filepath'],
                     hideHeadings:true
                 }
-                //key_name:$('kname').value,
-                // servers: servers,
-                // www:$('wwwdir').value,
-                // nodejs:$('nodedir').value,
-                // webdir:$('webdir').value,
-                // email:$('email').value
+
             ];
             return f;
         },
@@ -70,8 +64,9 @@ var capp = new CraydentApp(true);
 var JOE = new JsonObjectEditor({
     schemas:schemas,
     container:'#joeHolder',
-    // useHashlink:true,
-    // useBackButton:true,
+/*     useHashlink:true,
+     useBackButton:true,
+  */
     socket:':2098'/*,
      onServerLoadComplete:function(){
      capp.Reload.all();
@@ -113,7 +108,6 @@ function createEnvironment(){
     if(_joe.Object.validate(obj)){
         var servers = [];
         console.log('gitadd',obj);
-        //socket.emit('init',obj);
     }
     
     /*
