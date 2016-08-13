@@ -1,6 +1,21 @@
+/*/---------------------------------------------------------/*/
+/*/ Craydent LLC deploy-v0.1.0                              /*/
+/*/	Copyright 2011 (http://craydent.com/about)              /*/
+/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
+/*/	(http://craydent.com/license)                           /*/
+/*/---------------------------------------------------------/*/
+/*/---------------------------------------------------------/*/
+/* deploy_server params
+    1=>interpreter/node command
+    2=>node file being executed
+    3=>socket port
+    4=>http port
+    5=>SAC
+    6=>http auth username
+    7=>http auth password
+ */
 require('shelljs/global');
 require('craydent/global');
-//io.set("origins","*:*");
 
 $c.DEBUG_MODE = true;
 
@@ -40,6 +55,7 @@ GLOBAL.HTTP_PORT = process.argv[3] || GLOBAL.HTTP_PORT || 4800;
 GLOBAL.SAC = process.argv[4] || GLOBAL.SAC;
 GLOBAL.HTTP_AUTH_USERNAME = process.argv[5] || GLOBAL.HTTP_AUTH_USERNAME || "admin";
 GLOBAL.HTTP_AUTH_PASSWORD = process.argv[6] || GLOBAL.HTTP_AUTH_PASSWORD || "admin";
+GLOBAL.ENV = process.argv[6] || GLOBAL.ENV || "prod";
 
 if (nconfig === false) {
     GLOBAL.SAC = GLOBAL.SAC || cuid();
@@ -77,7 +93,8 @@ function buildit(data,callback){
             " " + (appobj.www || "''") +
             " " + (appobj.nodejs || "''") +
             " " + (appobj.webdir || "''") +
-            " '" + appobj.servers.join(" ") + "'", callback);
+            " '" + appobj.servers.join(" ") + "'" +
+            " '" + (GLOBAL.ENV || "prod") + "'", callback);
     }
 }
 io.on('connection', function (socket) {
@@ -167,6 +184,7 @@ io.on('connection', function (socket) {
             GLOBAL.HTTP_AUTH_USERNAME = data.http_username;
             GLOBAL.HTTP_AUTH_PASSWORD = data.http_password;
             GLOBAL.EMAIL = data.email;
+            GLOBAL.ENV = data.environment;
             writeNodeConfig();
             _exec("echo '"+data.password+"' | sudo -S bash " + shelldir + "initial_script.sh " + data.email + " " + (data.rootdir || "/var") + " $USER",function(code,output,message){
                 logit(message);
@@ -293,12 +311,14 @@ function start_app(obj) {
     }
 }
 function writeNodeConfig() {
-    fs.writeFileSync("./nodeconfig.js", "GLOBAL.SOCKET_PORT = "+GLOBAL.SOCKET_PORT+
+    fs.writeFileSync("./nodeconfig.js",
+        "GLOBAL.SOCKET_PORT = " + GLOBAL.SOCKET_PORT +
         ";\nGLOBAL.HTTP_PORT = "+GLOBAL.HTTP_PORT+
         ";\nGLOBAL.SAC = '" + GLOBAL.SAC + "';" +
         "\nGLOBAL.HTTP_AUTH_USERNAME = '" + (GLOBAL.HTTP_AUTH_USERNAME || "admin") + "';" +
         "\nGLOBAL.HTTP_AUTH_PASSWORD = '" + (GLOBAL.HTTP_AUTH_PASSWORD || "admin") + "';" +
-        "\nGLOBAL.EMAIL = '" + (GLOBAL.EMAIL || "" ) + "';");
+        "\nGLOBAL.EMAIL = '" + (GLOBAL.EMAIL || "" ) + "';" +
+        "\nGLOBAL.ENV = '" + (GLOBAL.ENV || "prod") + "';");
 }
 function getsshkey(name, callback){
     var path = '/var/craydentdeploy/key/' + name;

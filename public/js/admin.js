@@ -6,6 +6,7 @@ var schemas = {
             var f = [
                 {name:'rootdir',display:'Root', comment:'Root directory to install (default is /var)',default:'/var'},
                 {name:'email',required:true,comment:'email for ssh key',display:'Email'},
+                {name:'environment',default:'prod',comment:'environment tier (default: prod)',display:'Environment'},
                 {name:'http_username',default:'admin',display:'HTTP auth username',comment:'HTTP Authentication username (default: admin)'},
                 {name:'http_password',default:'admin',display:'HTTP auth password',comment:'HTTP Authentication password (default: admin)'},
                 {name:'http_port',default:4800,display:'HTTP Port',comment:'HTTP Port number'},
