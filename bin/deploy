@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/*/---------------------------------------------------------/*/
+/*/ Craydent LLC deploy-v0.1.3                              /*/
+/*/ Copyright 2011 (http://craydent.com/about)              /*/
+/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
+/*/ (http://craydent.com/license)                           /*/
+/*/---------------------------------------------------------/*/
+/*/---------------------------------------------------------/*/
 require('craydent/noConflict');
 require('shelljs/global');
 const readline = require('readline');
@@ -31,7 +38,7 @@ $c.syncroit(function*(){
 	//--------dir related
 	var run = $c.yieldable(exec);
 	var username =  String(require('child_process').execSync( "whoami", { encoding: 'utf8', timeout: 1000 } )).trim();
-	var params = yield run("../shell_scripts/create_dirs.sh \"/var\" \"" + username + "\""); // params [code,output,message]
+	var params = yield run(__dirname + "/../shell_scripts/create_dirs.sh \"/var\" \"" + username + "\""); // params [code,output,message]
 	//--------end dir related
 
 	//--------ssh copy/create
