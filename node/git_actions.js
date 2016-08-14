@@ -31,7 +31,7 @@ function createDeployKey(data) {
 	}
 }
 function createWebhook(data) {
-	var url = data.protocol + "://" + data.host + ":" + GLOBAL.HTTP_PORT + "/build/" + data.name + "/" + GLOBAL.SAC;
+	var url = data.protocol + "://" + data.host + ":" + global.HTTP_PORT + "/build/" + data.name + "/" + global.SAC;
 	if (data.git_address.contains('git@github.com')) {
 		return $c.ajax({
 			url: "https://api.github.com/repos/" + data.repo_owner + "/" + data.project_name + "/hooks",

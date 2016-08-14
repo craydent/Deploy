@@ -51,15 +51,15 @@ if (!apps) {
     }];
     fs.writeFileSync("./craydent_deploy_config.json", JSON.stringify(apps));
 }
-GLOBAL.SOCKET_PORT = process.argv[2] || GLOBAL.SOCKET_PORT || 4900;
-GLOBAL.HTTP_PORT = process.argv[3] || GLOBAL.HTTP_PORT || 4800;
-GLOBAL.SAC = process.argv[4] || GLOBAL.SAC;
-GLOBAL.HTTP_AUTH_USERNAME = process.argv[5] || GLOBAL.HTTP_AUTH_USERNAME || "admin";
-GLOBAL.HTTP_AUTH_PASSWORD = process.argv[6] || GLOBAL.HTTP_AUTH_PASSWORD || "admin";
-GLOBAL.ENV = process.argv[6] || GLOBAL.ENV || "prod";
+global.SOCKET_PORT = process.argv[2] || global.SOCKET_PORT || 4900;
+global.HTTP_PORT = process.argv[3] || global.HTTP_PORT || 4800;
+global.SAC = process.argv[4] || global.SAC;
+global.HTTP_AUTH_USERNAME = process.argv[5] || global.HTTP_AUTH_USERNAME || "admin";
+global.HTTP_AUTH_PASSWORD = process.argv[6] || global.HTTP_AUTH_PASSWORD || "admin";
+global.ENV = process.argv[6] || global.ENV || "prod";
 
 if (nconfig === false) {
-    GLOBAL.SAC = GLOBAL.SAC || cuid();
+    global.SAC = global.SAC || cuid();
     writeNodeConfig();
 }
 var io = require('socket.io')(SOCKET_PORT);//.of("deploy");
@@ -95,7 +95,7 @@ function buildit(data,callback){
             " " + (appobj.nodejs || "''") +
             " " + (appobj.webdir || "''") +
             " '" + appobj.servers.join(" ") + "'" +
-            " '" + (GLOBAL.ENV || "prod") + "'", callback);
+            " '" + (global.ENV || "prod") + "'", callback);
     }
 }
 io.on('connection', function (socket) {
@@ -179,13 +179,13 @@ io.on('connection', function (socket) {
         logit('initializing', data);
         if (nconfig === false || data.passcode == SAC || data.sac == SAC) {
             nconfig = true;
-            GLOBAL.SOCKET_PORT = parseInt(data.ws_port);
-            GLOBAL.HTTP_PORT = parseInt(data.http_port);
-            GLOBAL.SAC = data.passcode || data.sac;
-            GLOBAL.HTTP_AUTH_USERNAME = data.http_username;
-            GLOBAL.HTTP_AUTH_PASSWORD = data.http_password;
-            GLOBAL.EMAIL = data.email;
-            GLOBAL.ENV = data.environment;
+            global.SOCKET_PORT = parseInt(data.ws_port);
+            global.HTTP_PORT = parseInt(data.http_port);
+            global.SAC = data.passcode || data.sac;
+            global.HTTP_AUTH_USERNAME = data.http_username;
+            global.HTTP_AUTH_PASSWORD = data.http_password;
+            global.EMAIL = data.email;
+            global.ENV = data.environment;
             writeNodeConfig();
             _exec("echo '"+data.password+"' | sudo -S bash " + shelldir + "initial_script.sh " + data.email + " " + (data.rootdir || "/var") + " $USER",function(code,output,message){
                 logit(message);
@@ -232,7 +232,7 @@ var server = $c.createServer(function (req, res) {
     path = (path.startsWith('/') ? "../public" : "../public/") + path;
     path.endsWith('.html') && self.header("Content-Type: text/html");
 
-    if (!self.SERVER_PATH.contains(GLOBAL.SAC) && path.endsWith('.html')) {
+    if (!self.SERVER_PATH.contains(global.SAC) && path.endsWith('.html')) {
         if (!auth) {     // No Authorization header was passed in so it's the first time the browser hit us
             self.header(auth_header);
             return self.end(401, '<html><body>You are trying to access a secure area.  Please login.</body></html>');
@@ -246,7 +246,7 @@ var server = $c.createServer(function (req, res) {
             username = creds[0],
             password = creds[1];
 
-        if (username != GLOBAL.HTTP_AUTH_USERNAME || password != GLOBAL.HTTP_AUTH_PASSWORD) {
+        if (username != global.HTTP_AUTH_USERNAME || password != global.HTTP_AUTH_PASSWORD) {
             self.header(auth_header);
             // res.statusCode = 403;   // or alternatively just reject them altogether with a 403 Forbidden
             self.end(401, '<html><body>You are not authorized to access this page</body></html>');
@@ -313,13 +313,13 @@ function start_app(obj) {
 }
 function writeNodeConfig() {
     fs.writeFileSync("./nodeconfig.js",
-        "GLOBAL.SOCKET_PORT = " + GLOBAL.SOCKET_PORT +
-        ";\nGLOBAL.HTTP_PORT = "+GLOBAL.HTTP_PORT+
-        ";\nGLOBAL.SAC = '" + GLOBAL.SAC + "';" +
-        "\nGLOBAL.HTTP_AUTH_USERNAME = '" + (GLOBAL.HTTP_AUTH_USERNAME || "admin") + "';" +
-        "\nGLOBAL.HTTP_AUTH_PASSWORD = '" + (GLOBAL.HTTP_AUTH_PASSWORD || "admin") + "';" +
-        "\nGLOBAL.EMAIL = '" + (GLOBAL.EMAIL || "" ) + "';" +
-        "\nGLOBAL.ENV = '" + (GLOBAL.ENV || "prod") + "';");
+        "global.SOCKET_PORT = " + global.SOCKET_PORT +
+        ";\nglobal.HTTP_PORT = "+global.HTTP_PORT+
+        ";\nglobal.SAC = '" + global.SAC + "';" +
+        "\nglobal.HTTP_AUTH_USERNAME = '" + (global.HTTP_AUTH_USERNAME || "admin") + "';" +
+        "\nglobal.HTTP_AUTH_PASSWORD = '" + (global.HTTP_AUTH_PASSWORD || "admin") + "';" +
+        "\nglobal.EMAIL = '" + (global.EMAIL || "" ) + "';" +
+        "\nglobal.ENV = '" + (global.ENV || "prod") + "';");
 }
 function getsshkey(name, callback){
     var path = '/var/craydentdeploy/key/' + name;
