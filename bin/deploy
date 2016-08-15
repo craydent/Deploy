@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.5                              /*/
+/*/ Craydent LLC deploy-v0.1.6                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -14,7 +14,9 @@ const git = require('../node/git_actions');
 var run = $c.yieldable(exec);
 
 if($c.include('../node/nodeconfig')) {
-	yield run(__dirname + "/../shell_scripts/node_script.sh \"deploy\" \"deploy_server.js\" \"node\");");
+	return $c.syncroit(function*(){
+		yield run(__dirname + "/../shell_scripts/node_script.sh \"deploy\" \"deploy_server.js\" \"node\");");
+	});
 }
 
 const rl = readline.createInterface({
