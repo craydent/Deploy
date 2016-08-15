@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.1.9                              /*/
+#/*/ Craydent LLC deploy-v0.1.10                             /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -14,6 +14,10 @@
 
 #sudo mkdir -p /var/craydentdeploy/nodejs/$1;
 #cd /var/craydentdeploy/nodejs/$1;
+nodepath=$3
+if [ -z "$3" ]; then
+    nodepath="$nodepath/";
+fi
 nodedir='/var/craydentdeploy/nodejs';
 process_list=(${2});
 list=$(echo ${process_list[@]}|tr " " "|")
@@ -21,7 +25,7 @@ list=$(echo ${process_list[@]}|tr " " "|")
 echo "terminating process $1";
 echo "before kill $1 $2 $3 $4 \"$list\"";
 ps aux | egrep "$list".*;
-ps aux | egrep "node\s$nodedir/$1/$3/($list)$".*|awk '{print $2}' | xargs kill -9
+ps aux | egrep "node\s$nodedir/$1/$nodepath($list)$".*|awk '{print $2}' | xargs kill -9
 echo "$4 parameter4";
 echo "after kill $1 $2 $3 $4";
 if [ -z "$4" ]; then
