@@ -17,7 +17,7 @@ function createDeployKey(data) {
 			method: "POST",
 			data: {"title": data.key_name, "key": data.content, "read_only": true},
 			onsuccess: function (data) {
-				console.log(data);
+				$c.logit(data);
 			}
 		});
 	} else if ($c.contains(data.git_address,'git@bitbucket.org')) {
@@ -31,7 +31,7 @@ function createDeployKey(data) {
 			method: "POST",
 			data: {"label": data.key_name, "key": data.content},
 			onsuccess: function (data) {
-				console.log(data);
+				$c.logit(data);
 			}
 		});
 	}
@@ -54,7 +54,7 @@ function createWebhook(data) {
 				active: true
 			},
 			onsuccess: function (data) {
-				console.log(data);
+				$c.logit(data);
 			}
 		});
 	} else if ($c.contains(data.git_address,'git@bitbucket.org')) {
@@ -73,7 +73,7 @@ function createWebhook(data) {
 				active: true
 			},
 			onsuccess: function (data) {
-				console.log(data);
+				$c.logit(data);
 			}
 		});
 	}

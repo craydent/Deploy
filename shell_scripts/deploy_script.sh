@@ -17,7 +17,7 @@
 
 path="/var/craydentdeploy";
 archive="$path/backup/$1";
-scripts="$PWD/../shell_scripts";
+scripts="$path/nodejs/deploy/shell_scripts";
 gitpath="$path/git/$1";
 nodepath="$path/nodejs/$1";
 
