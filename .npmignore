@@ -3,3 +3,5 @@ _*
 test
 index.js
 node_modules
+nodeconfig.js
+craydent_deploy_config.json

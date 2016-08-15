@@ -1,12 +1,12 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.4                              /*/
-/*/	Copyright 2011 (http://craydent.com/about)              /*/
+/*/ Craydent LLC deploy-v0.1.5                              /*/
+/*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
-/*/	(http://craydent.com/license)                           /*/
+/*/ (http://craydent.com/license)                           /*/
 /*/---------------------------------------------------------/*/
 /*/---------------------------------------------------------/*/
 function createDeployKey(data) {
-	if (data.git_address.contains('git@github.com')) {
+	if ($c.contains(data.git_address,'git@github.com')) {
 		return $c.ajax({
 			url: "https://api.github.com/repos/" + data.repo_owner + "/" + data.project_name + "/keys",
 			headers: {
@@ -20,7 +20,7 @@ function createDeployKey(data) {
 				console.log(data);
 			}
 		});
-	} else if (data.git_address.contains('git@bitbucket.org')) {
+	} else if ($c.contains(data.git_address,'git@bitbucket.org')) {
 		return $c.ajax({
 			url: "https://api.bitbucket.org/1.0/repositories/" + data.repo_owner + "/" + data.project_name + "/deploy-keys",
 			headers: {
@@ -38,7 +38,7 @@ function createDeployKey(data) {
 }
 function createWebhook(data) {
 	var url = data.protocol + "://" + data.host + ":" + global.HTTP_PORT + "/build/" + data.name + "/" + global.SAC;
-	if (data.git_address.contains('git@github.com')) {
+	if ($c.contains(data.git_address,'git@github.com')) {
 		return $c.ajax({
 			url: "https://api.github.com/repos/" + data.repo_owner + "/" + data.project_name + "/hooks",
 			headers: {
@@ -57,7 +57,7 @@ function createWebhook(data) {
 				console.log(data);
 			}
 		});
-	} else if (data.git_address.contains('git@bitbucket.org')) {
+	} else if ($c.contains(data.git_address,'git@bitbucket.org')) {
 		return $c.ajax({
 			url: "https://api.bitbucket.org/2.0/repositories/" + data.repo_owner + "/" + data.project_name + "/hooks",
 			headers: {

@@ -1,13 +1,13 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.4                              /*/
+/*/ Craydent LLC deploy-v0.1.5                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
 /*/---------------------------------------------------------/*/
 /*/---------------------------------------------------------/*/
 /* deploy_server params
-    1=>interpreter/node command
-    2=>node file being executed
+    1=>interpreter/node command (not used)
+    2=>node file being executed (not used)
     3=>socket port
     4=>http port
     5=>SAC
