@@ -1,6 +1,6 @@
 {
   "name": "@craydent/craydent-deploy",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "craydent deploy helper",
   "main": "deploy_server.js",
   "scripts": {
