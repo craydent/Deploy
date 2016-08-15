@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.1.10                             /*/
+#/*/ Craydent LLC deploy-v0.1.11                             /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -34,8 +34,8 @@ echo "$nodedir/$1/$3/";
     mkdir -p "$logBasePath/archive";
 
     for i in "${process_list[@]}"; do
-        cp $logBasePath/$i.log "$logBasePath/archive/$i.log.$(date +%F_%R)" &
-        nohup node $nodedir/$1/$3/$i > "$logBasePath/$i.log" &
+        cp $logBasePath/$i.log "$logBasePath/archive/$i.log.$(date +%F_%R)";
+        nohup node $nodedir/$1/$3/$i > "$logBasePath/$i.log" 2>&1 &
     done
 
     ps aux | egrep "$list".*;

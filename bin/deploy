@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.10                             /*/
+/*/ Craydent LLC deploy-v0.1.11                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -33,7 +33,7 @@ $c.syncroit(function*(){
 		key_name = "master_id_rsa";
 
 	//--------environment related
-	var env = global.SOCKET_PORT = (yield question('What tier/environment is this server? (PROD): ')) || 4900;
+	var env = global.SOCKET_PORT = (yield question('What tier/environment is this server? (PROD): ')) || "PROD";
 	var sport = global.SOCKET_PORT = (yield question('What socket port do you want to use? (4900): ')) || 4900;
 	var hport = global.HTTP_PORT = (yield question('What server port do you want to use? (4800): ')) || 4800;
 	var authu = global.HTTP_AUTH_USERNAME = (yield question('What HTTP Auth username do you want to use? (admin): ')) || 'admin';
@@ -59,23 +59,23 @@ $c.syncroit(function*(){
 	yield run('sudo chown -R '+username+' /var/craydentdeploy/;');
 	//--------end dir related
 
-	//--------ssh copy/create
-	if (ssh_file) { yield run('cp ' + ssh_file + ' /var/craydentdeploy/key/'+key_name+';'); }
-	else { yield run('ssh-keygen -t rsa -C "$email" -N "" -f /var/craydentdeploy/key/'+key_name+';'); }
-	var content = fs.readFileSync("/var/craydentdeploy/key/"+key_name + ".pub",{encoding:'utf8'});
-	yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;chmod 644 /var/craydentdeploy/key/'+key_name+".pub");
-	//--------end ssh copy/create
-
 	//--------notifications
 	var email = global.EMAIL = yield question('Email for notifications. (Enter): ');
 	//--------end notifications
+
+	//--------ssh copy/create
+	if (ssh_file) { yield run('cp ' + ssh_file + ' /var/craydentdeploy/key/'+key_name+';'); }
+	else { yield run('ssh-keygen -t rsa -C "' + email + '" -N "" -f /var/craydentdeploy/key/'+key_name+';'); }
+	var content = fs.readFileSync("/var/craydentdeploy/key/"+key_name + ".pub",{encoding:'utf8'});
+	yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;chmod 644 /var/craydentdeploy/key/'+key_name+".pub");
+	//--------end ssh copy/create
 
 	//--------git related
 	var skip = yield question('Let\'s create a project or enter \'skip\' to do this later: ');
 	if (!skip) {
 		var gitUrl = yield question('What is the GitHub or BitBucket SSH url: ');
 		var buildname = gitUrl.replace(/.*\/(.*)\.git/,'$1');
-			buildname = (yield question('What do you want to call your project ('+buildname+'): ')) || buildname;
+		buildname = (yield question('What do you want to call your project ('+buildname+'): ')) || buildname;
 		var setupWebHooks = (yield question('Set up Webhooks for continuous integration? (yes): ')) || "yes";
 		var createDeployKey = (yield question('Is your ssh key already registered as a deploy key in Git? (no): ')) || "no";
 		var url = yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): ');
@@ -119,30 +119,33 @@ $c.syncroit(function*(){
 			git_user:gitUser,
 			git_password:gitPassword
 		}));
+		yield run("mkdir -p /var/craydentdeploy/git/" + buildname + ";");
+		yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;');
 		yield run('ssh-agent bash -c "ssh-add /var/craydentdeploy/key/' + key_name + '; git clone ' + gitUrl + ' /var/craydentdeploy/git/' + buildname + '";');
 		yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;');
 	}
 	//--------end git related
 
 	//--------move app and start deploy service
-	yield run("mkdir -p /var/craydentdeploy/nodejs/deploy;");
-	yield run("mkdir -p /var/craydentdeploy/log/deploy;");
-	fs.writeFileSync("../node/nodeconfig.js",
-		"global.SOCKET_PORT = " + sport +
+	var ncontent = "global.SOCKET_PORT = " + sport +
 		";\nglobal.HTTP_PORT = " + hport +
 		";\nglobal.SAC = '" + scuid + "';" +
 		"\nglobal.HTTP_AUTH_USERNAME = '" + (authu || "admin") + "';" +
 		"\nglobal.HTTP_AUTH_PASSWORD = '" + (authp || "admin") + "';" +
 		"\nglobal.EMAIL = '" + (email || "" ) + "';" +
-		"\nglobal.ENV = '" + (env || "prod") + "';");
+		"\nglobal.ENV = '" + (env || "prod") + "';";
 
+	yield run("mkdir -p /var/craydentdeploy/nodejs/deploy;");
+	yield run("mkdir -p /var/craydentdeploy/log/deploy;");
 	yield run("cp -r " + __dirname.replace('bin','') + "* /var/craydentdeploy/nodejs/deploy");
+	yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;');
+	yield run("echo \"" + ncontent + "\" > /var/craydentdeploy/nodejs/deploy/node/nodeconfig.js;");
 
 	var p = $c.include('/var/craydentdeploy/git/' + buildname + '/package.json');
 	var server = p.main || "";
 	yield run('/var/craydentdeploy/nodejs/deploy/shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
-	yield run('/var/craydentdeploy/nodejs/deploy/shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
-	run("nohup node /var/craydentdeploy/nodejs/deploy/node/deploy_server.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > /var/craydentdeploy/log/deploy/deploy_server.js.log &");
+	//yield run('/var/craydentdeploy/nodejs/deploy/shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
+	yield run("nohup node /var/craydentdeploy/nodejs/deploy/node/deploy_server.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > /var/craydentdeploy/log/deploy/deploy_server.js.log 2>&1 &");
 	//--------end move app and start deploy service
 
 	console.log('Completed');
