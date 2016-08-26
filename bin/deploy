@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.12                             /*/
+/*/ Craydent LLC deploy-v0.1.13                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -29,12 +29,18 @@ require('shelljs/global');
 const readline = require('readline');
 const fs = require('fs');
 const git = require('../node/git_actions');
+const BASE_PATH = "/var/craydentdeploy/";
+const NODE_PATH = "/var/craydentdeploy/nodejs/craydent-deploy/node/";
+const PROJECT_PATH = "/var/craydentdeploy/nodejs/craydent-deploy/";
+const GIT_PATH = "/var/craydentdeploy/git/";
+const LOG_PATH = "/var/craydentdeploy/log/craydent-deploy/";
+const KEY_PATH = "/var/craydentdeploy/key/";
 
 var run = $c.yieldable(exec);
 
-if($c.include('../node/nodeconfig')) {
+if($c.include(NODE_PATH + 'nodeconfig')) {
 	return $c.syncroit(function*(){
-		yield run(__dirname + "/../shell_scripts/node_script.sh \"deploy\" \"deploy_server.js\" \"node\";");
+		yield run(__dirname + "/../shell_scripts/node_script.sh \"deploy\" \"deploy_server.js\" \"node/\";");
 		process.exit();
 	});
 }
@@ -83,7 +89,7 @@ $c.syncroit(function*(){
 	//--------dir related
 	var username =  String(require('child_process').execSync( "whoami", { encoding: 'utf8', timeout: 1000 } )).trim();
 	var params = yield run(__dirname + "/../shell_scripts/create_dirs.sh \"/var\" \"" + username + "\""); // params [code,output,message]
-	yield run('sudo chown -R '+username+' /var/craydentdeploy/;');
+	yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
 	//--------end dir related
 
 	//--------notifications
@@ -91,10 +97,10 @@ $c.syncroit(function*(){
 	//--------end notifications
 
 	//--------ssh copy/create
-	if (ssh_file) { yield run('cp ' + ssh_file + ' /var/craydentdeploy/key/'+key_name+';'); }
-	else { yield run('ssh-keygen -t rsa -C "' + email + '" -N "" -f /var/craydentdeploy/key/'+key_name+';'); }
-	var content = fs.readFileSync("/var/craydentdeploy/key/"+key_name + ".pub",{encoding:'utf8'});
-	yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;chmod 644 /var/craydentdeploy/key/'+key_name+".pub");
+	if (ssh_file) { yield run('cp ' + ssh_file + ' ' + KEY_PATH + key_name+';'); }
+	else { yield run('ssh-keygen -t rsa -C "' + email + '" -N "" -f ' + KEY_PATH + key_name + ';'); }
+	var content = fs.readFileSync(KEY_PATH + key_name + ".pub",{encoding:'utf8'});
+	yield run('chown -R ' + username + ' ' + BASE_PATH + ';chmod 644 ' + KEY_PATH + key_name + ".pub");
 	//--------end ssh copy/create
 
 	//--------git related
@@ -106,7 +112,7 @@ $c.syncroit(function*(){
 			buildname = process.argv[9] || (yield question('What do you want to call your project (' + buildname + '): ')) || buildname;
 			var setupWebHooks = process.argv[10] || (yield question('Set up Webhooks for continuous integration? (yes): ')) || "yes";
 			var createDeployKey = process.argv[11] || (yield question('Is your ssh key already registered as a deploy key in Git? (no): ')) || "no";
-			var url = process.argv[12] || yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): ');
+			var url = process.argv[12] || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
 			var protocol = "http";
 			global.HTTP_PORT = 4800;
 			var host;
@@ -147,10 +153,10 @@ $c.syncroit(function*(){
 				git_user: gitUser,
 				git_password: gitPassword
 			}));
-			yield run("mkdir -p /var/craydentdeploy/git/" + buildname + ";");
-			yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;');
-			yield run('ssh-agent bash -c "ssh-add /var/craydentdeploy/key/' + key_name + '; git clone ' + gitUrl + ' /var/craydentdeploy/git/' + buildname + '";');
-			yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;');
+			yield run("mkdir -p " + GIT_PATH + buildname + ";");
+			yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
+			yield run('ssh-agent bash -c "ssh-add ' + KEY_PATH + key_name + '; git clone ' + gitUrl + ' ' + GIT_PATH + buildname + '";');
+			yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
 		}
 	}
 	//--------end git related
@@ -164,17 +170,16 @@ $c.syncroit(function*(){
 		"\nglobal.EMAIL = '" + (email || "" ) + "';" +
 		"\nglobal.ENV = '" + (env || "prod") + "';";
 
-	yield run("mkdir -p /var/craydentdeploy/nodejs/deploy;");
-	yield run("mkdir -p /var/craydentdeploy/log/deploy;");
-	yield run("cp -r " + __dirname.replace('bin','') + "* /var/craydentdeploy/nodejs/deploy");
-	yield run('sudo chown -R ' + username + ' /var/craydentdeploy/;');
-	yield run("echo \"" + ncontent + "\" > /var/craydentdeploy/nodejs/deploy/node/nodeconfig.js;");
+	yield run("mkdir -p " + PROJECT_PATH + ";");
+	yield run("mkdir -p " + LOG_PATH + ";");
+	yield run("cp -r " + __dirname.replace('bin','') + "* " + PROJECT_PATH);
+	yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
+	yield run("echo \"" + ncontent + "\" > " + NODE_PATH + "nodeconfig.js;");
 
-	var p = $c.include('/var/craydentdeploy/git/' + buildname + '/package.json');
+	var p = $c.include(GIT_PATH + buildname + '/package.json');
 	var server = p.main || "";
-	yield run('/var/craydentdeploy/nodejs/deploy/shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
-	//yield run('/var/craydentdeploy/nodejs/deploy/shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
-	yield run("nohup node /var/craydentdeploy/nodejs/deploy/node/deploy_server.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > /var/craydentdeploy/log/deploy/deploy_server.js.log 2>&1 &");
+	yield run(PROJECT_PATH + 'shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
+	yield run("nohup node " + NODE_PATH + "deploy_server.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > " + LOG_PATH + "deploy_server.js.log 2>&1 &");
 	//--------end move app and start deploy service
 
 	console.log('Completed');

@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.1.12                             /*/
+#/*/ Craydent LLC deploy-v0.1.13                             /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -17,6 +17,10 @@
 nodepath=$3
 if [ -z "$3" ]; then
     nodepath="$nodepath/";
+fi
+LEN=${#nodepath}-1
+if [ "${nodepath:LEN}" != "/" ]; then
+  nodepath=$nodepath"/"
 fi
 nodedir='/var/craydentdeploy/nodejs';
 process_list=(${2});
@@ -35,7 +39,7 @@ echo "$nodedir/$1/$3/";
 
     for i in "${process_list[@]}"; do
         cp $logBasePath/$i.log "$logBasePath/archive/$i.log.$(date +%F_%R)";
-        nohup node $nodedir/$1/$3/$i > "$logBasePath/$i.log" 2>&1 &
+        nohup node $nodedir/$1/$3$i > "$logBasePath/$i.log" 2>&1 &
     done
 
     ps aux | egrep "$list".*;

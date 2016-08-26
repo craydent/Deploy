@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.12                             /*/
+/*/ Craydent LLC deploy-v0.1.13                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -18,6 +18,12 @@ require('shelljs/global');
 require('craydent/global');
 
 $c.DEBUG_MODE = true;
+const BASE_PATH = "/var/craydentdeploy/";
+const NODE_PATH = "/var/craydentdeploy/nodejs/deploy/node/";
+const PROJECT_PATH = "/var/craydentdeploy/nodejs/deploy/";
+const LOG_BASE_PATH = "/var/craydentdeploy/log/";
+const LOG_PATH = "/var/craydentdeploy/log/craydent-deploy/";
+const KEY_PATH = "/var/craydentdeploy/key/";
 
 var fs = require('fs');
 var git = require('./git_actions');
@@ -41,7 +47,7 @@ if (!apps) {
     apps = [{
         "name": "craydent-deploy",
         "servers": ["deploy_server.js"],
-        "logfile": ["/var/craydentdeploy/log/craydent-deploy/deploy_server.log"],
+        "logfile": [LOG_PATH + "deploy_server.log"],
         "size":{},
         "fd":{},
         "www": "",
@@ -49,7 +55,7 @@ if (!apps) {
         "webdir":"",
         "email":""
     }];
-    fs.writeFileSync("./craydent_deploy_config.json", JSON.stringify(apps));
+    fs.writeFileSync(NODE_PATH + "craydent_deploy_config.json", JSON.stringify(apps));
 }
 global.SOCKET_PORT = process.argv[2] || global.SOCKET_PORT || 4900;
 global.HTTP_PORT = process.argv[3] || global.HTTP_PORT || 4800;
@@ -68,7 +74,7 @@ logit('socket start on port: ' + SOCKET_PORT);
 var config = {apps:apps,keys:["master_id_rsa"]};
 // store all keys to config.keys variable as a string of names
 try {
-    config.keys = fs.readdirSync('/var/craydentdeploy/key/');
+    config.keys = fs.readdirSync(KEY_PATH);
     for (var i = 0,len = config.keys.length; i < len; i++) {
         if (!config.keys[i].endsWith('.pub')) {
             config.keys.removeAt(i);
@@ -119,7 +125,7 @@ io.on('connection', function (socket) {
                 var logFiles = [];
                 var servers = $c.isArray(data.servers) ? data.servers : [];
                 for (var i = 0, len = servers.length; i < len; i++) {
-                    logFiles.push("/var/craydentdeploy/log/" + data.name + "/" + servers[i]);
+                    logFiles.push(LOG_BASE_PATH + data.name + "/" + servers[i]);
                 }
                 apps.push({
                     'git':data.git_address,
@@ -160,7 +166,7 @@ io.on('connection', function (socket) {
             _exec(shelldir + "sshkey_script.sh " + data.name + " " + data.email,function (code,output,message) {
                 logit(message);
                 var pubkey = data.name+'.pub';
-                var path = '/var/craydentdeploy/key/'+pubkey;
+                var path = KEY_PATH + pubkey;
                 fs.exists(path,function(exists){
                     if (!exists) { return }
                     fs.readFile(path, 'utf8', function (err,data) {
@@ -229,7 +235,7 @@ var server = $c.createServer(function (req, res) {
         auth_header = 'WWW-Authenticate: Basic realm="Deployer Secure Area"';
     if (path.contains('?')) { path = path.split('?')[0]; }
     if (path.endsWith('/')) { path += "index.html"; }
-    path = (path.startsWith('/') ? "../public" : "../public/") + path;
+    path = (path.startsWith('/') ? PROJECT_PATH + "public" : PROJECT_PATH + "public/") + path;
     path.endsWith('.html') && self.header("Content-Type: text/html");
 
     if (!self.SERVER_PATH.contains(global.SAC) && path.endsWith('.html')) {
@@ -253,7 +259,11 @@ var server = $c.createServer(function (req, res) {
         }
     }
     fs.exists(path,function(exists){
-        if (!exists) { return self.end(); }
+        if (!exists) {
+            console.log('missing file: ' + path,exists);
+            return self.end();
+        }
+        console.log('file: ' + path);
         return fs.readFile(path, 'utf8', function (err,data) {
             if (err) { return self.end(); }
             return self.end(fillTemplate(data,config));
@@ -322,7 +332,7 @@ function writeNodeConfig() {
         "\nglobal.ENV = '" + (global.ENV || "prod") + "';");
 }
 function getsshkey(name, callback){
-    var path = '/var/craydentdeploy/key/' + name;
+    var path = KEY_PATH + name;
     fs.exists(path, function (exists) {
         if (!exists) { return; }
         fs.readFile(path, 'utf8', function (err, dt) {
