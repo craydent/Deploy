@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.15                             /*/
+/*/ Craydent LLC deploy-v0.1.16                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -186,6 +186,16 @@ $c.syncroit(function*(){
 		var p = $c.include(GIT_PATH + buildname + '/package.json');
 		var server = p.main || "";
 		yield run(PROJECT_PATH + 'shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
+
+		var cproxy_path = '/usr/local/lib/node_modules/@craydent/craydent-proxy/pconfig.json';
+
+		var pconfig = $c.include(cproxy_path) || $c.include(cproxy_path = '/usr/local/lib/node_modules/craydent-proxy/pconfig.json');
+		p = JSON.parseAdvanced(p);
+		if (p.cproxy && pconfig) {
+			var routes = p.cproxy.routes;
+			pconfig.routes = $c.merge(pconfig.routes, routes);
+			fs.writeFileSync(cproxy_path,JSON.stringify(pconfig, null, 2));
+		}
 	}
 	yield run("nohup node " + NODE_PATH + "deploy_server.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > " + LOG_PATH + "deploy_server.js.log 2>&1 &");
 	//--------end move app and start deploy service
