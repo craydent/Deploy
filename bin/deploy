@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.13                             /*/
+/*/ Craydent LLC deploy-v0.1.14                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -36,6 +36,11 @@ const GIT_PATH = "/var/craydentdeploy/git/";
 const LOG_PATH = "/var/craydentdeploy/log/craydent-deploy/";
 const KEY_PATH = "/var/craydentdeploy/key/";
 
+var indexOffset = 0;
+if (process.argv[0] == "sudo") {
+	indexOffset += 1;
+}
+
 var run = $c.yieldable(exec);
 
 if($c.include(NODE_PATH + 'nodeconfig')) {
@@ -57,16 +62,16 @@ $c.syncroit(function*(){
 		key_name = "master_id_rsa";
 
 	//--------environment related
-	var env = global.SOCKET_PORT = process.argv[1] || (yield question('What tier/environment is this server? (PROD): ')) || "PROD";
-	var sport = global.SOCKET_PORT = process.argv[2] || (yield question('What socket port do you want to use? (4900): ')) || 4900;
-	var hport = global.HTTP_PORT = process.argv[3] || (yield question('What server port do you want to use? (4800): ')) || 4800;
-	var authu = global.HTTP_AUTH_USERNAME = process.argv[4] || (yield question('What HTTP Auth username do you want to use? (admin): ')) || 'admin';
-	var authp = global.HTTP_AUTH_PASSWORD = process.argv[5] || (yield question('What HTTP Auth password do you want to use? (admin): ')) || 'admin';
+	var env = global.SOCKET_PORT = process.argv[1 + indexOffset] || (yield question('What tier/environment is this server? (PROD): ')) || "PROD";
+	var sport = global.SOCKET_PORT = process.argv[2 + indexOffset] || (yield question('What socket port do you want to use? (4900): ')) || 4900;
+	var hport = global.HTTP_PORT = process.argv[3 + indexOffset] || (yield question('What server port do you want to use? (4800): ')) || 4800;
+	var authu = global.HTTP_AUTH_USERNAME = process.argv[4 + indexOffset] || (yield question('What HTTP Auth username do you want to use? (admin): ')) || 'admin';
+	var authp = global.HTTP_AUTH_PASSWORD = process.argv[5 + indexOffset] || (yield question('What HTTP Auth password do you want to use? (admin): ')) || 'admin';
 	var scuid = global.SAC = $c.cuid();
 	//--------end environment related
 
 	//--------ssh related
-	if (!process.argv[6]) {
+	if (!process.argv[6 + indexOffset]) {
 		try {
 			status = fs.statSync("~/.ssh/id_rsa.pub");
 		} catch (e) {
@@ -80,8 +85,8 @@ $c.syncroit(function*(){
 			ssh_file = yield question('Enter to create a key or type the full path to the ssh key? (Enter): ');
 		}
 	} else {
-		if (process.argv[6] != "create") {
-			ssh_file = process.argv[6];
+		if (process.argv[6 + indexOffset] != "create") {
+			ssh_file = process.argv[6 + indexOffset];
 		}
 	}
 	//--------end ssh related
@@ -93,7 +98,7 @@ $c.syncroit(function*(){
 	//--------end dir related
 
 	//--------notifications
-	var email = global.EMAIL = process.argv[7] || (yield question('Email for notifications. (Enter): '));
+	var email = global.EMAIL = process.argv[7 + indexOffset] || (yield question('Email for notifications. (Enter): '));
 	//--------end notifications
 
 	//--------ssh copy/create
@@ -103,16 +108,17 @@ $c.syncroit(function*(){
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';chmod 644 ' + KEY_PATH + key_name + ".pub");
 	//--------end ssh copy/create
 
+	var buildname;
 	//--------git related
-	if (process.argv[8] || $c.isNull(process.argv[8]) && process.argv.length > 2) {
+	if (process.argv[8 + indexOffset] || $c.isNull(process.argv[8 + indexOffset]) && process.argv.length > 2 + indexOffset) {
 		var skip = yield question('Let\'s create a project or enter \'skip\' to do this later: ');
 		if (!skip) {
-			var gitUrl = process.argv[8] || (yield question('What is the GitHub or BitBucket SSH url: '));
-			var buildname = gitUrl.replace(/.*\/(.*)\.git/, '$1');
-			buildname = process.argv[9] || (yield question('What do you want to call your project (' + buildname + '): ')) || buildname;
-			var setupWebHooks = process.argv[10] || (yield question('Set up Webhooks for continuous integration? (yes): ')) || "yes";
-			var createDeployKey = process.argv[11] || (yield question('Is your ssh key already registered as a deploy key in Git? (no): ')) || "no";
-			var url = process.argv[12] || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
+			var gitUrl = process.argv[8 + indexOffset] || (yield question('What is the GitHub or BitBucket SSH url: '));
+			buildname = gitUrl.replace(/.*\/(.*)\.git/, '$1');
+			buildname = process.argv[9 + indexOffset] || (yield question('What do you want to call your project (' + buildname + '): ')) || buildname;
+			var setupWebHooks = process.argv[10 + indexOffset] || (yield question('Set up Webhooks for continuous integration? (yes): ')) || "yes";
+			var createDeployKey = process.argv[11 + indexOffset] || (yield question('Is your ssh key already registered as a deploy key in Git? (no): ')) || "no";
+			var url = process.argv[12 + indexOffset] || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
 			var protocol = "http";
 			global.HTTP_PORT = 4800;
 			var host;
@@ -127,9 +133,9 @@ $c.syncroit(function*(){
 			var repo_owner = gitUrl.replace(/.*:(.*)?\/.*\.git/, '$1');
 			var project_name = gitUrl.replace(/.*:.*?\/(.*)\.git/, '$1');
 			if (!(createDeployKey in yes)) {
-				var gitUser = process.argv[13] || (yield question('If you would like us to add the ssh to your git account, type your username (Enter): '));
+				var gitUser = process.argv[13 + indexOffset] || (yield question('If you would like us to add the ssh to your git account, type your username (Enter): '));
 				if (gitUser) {
-					var gitPassword = process.argv[14] || (yield hidden("Enter your password: "));
+					var gitPassword = process.argv[14 + indexOffset] || (yield hidden("Enter your password: "));
 					//git@bitbucket.org:craydent/craydent-proxy.git  git@github.com:hartclark/t-bone.git
 					yield git.createDeployKey({
 						git_address: gitUrl,
@@ -176,9 +182,11 @@ $c.syncroit(function*(){
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
 	yield run("echo \"" + ncontent + "\" > " + NODE_PATH + "nodeconfig.js;");
 
-	var p = $c.include(GIT_PATH + buildname + '/package.json');
-	var server = p.main || "";
-	yield run(PROJECT_PATH + 'shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
+	if (buildname) {
+		var p = $c.include(GIT_PATH + buildname + '/package.json');
+		var server = p.main || "";
+		yield run(PROJECT_PATH + 'shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
+	}
 	yield run("nohup node " + NODE_PATH + "deploy_server.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > " + LOG_PATH + "deploy_server.js.log 2>&1 &");
 	//--------end move app and start deploy service
 
