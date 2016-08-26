@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.16                             /*/
+/*/ Craydent LLC deploy-v0.1.17                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -19,8 +19,8 @@ require('craydent/global');
 
 $c.DEBUG_MODE = true;
 const BASE_PATH = "/var/craydentdeploy/";
-const NODE_PATH = "/var/craydentdeploy/nodejs/deploy/node/";
-const PROJECT_PATH = "/var/craydentdeploy/nodejs/deploy/";
+const NODE_PATH = "/var/craydentdeploy/nodejs/craydent-deploy/node/";
+const PROJECT_PATH = "/var/craydentdeploy/nodejs/craydent-deploy/";
 const LOG_BASE_PATH = "/var/craydentdeploy/log/";
 const LOG_PATH = "/var/craydentdeploy/log/craydent-deploy/";
 const KEY_PATH = "/var/craydentdeploy/key/";
