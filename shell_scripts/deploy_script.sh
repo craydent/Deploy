@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.1.14                             /*/
+#/*/ Craydent LLC deploy-v0.1.15                             /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -17,7 +17,7 @@
 
 path="/var/craydentdeploy";
 archive="$path/backup/$1";
-scripts="$path/nodejs/deploy/shell_scripts";
+scripts="$path/nodejs/craydent-deploy/shell_scripts";
 gitpath="$path/git/$1";
 nodepath="$path/nodejs/$1";
 

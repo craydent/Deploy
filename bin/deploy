@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.14                             /*/
+/*/ Craydent LLC deploy-v0.1.15                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -36,8 +36,8 @@ const GIT_PATH = "/var/craydentdeploy/git/";
 const LOG_PATH = "/var/craydentdeploy/log/craydent-deploy/";
 const KEY_PATH = "/var/craydentdeploy/key/";
 
-var indexOffset = 0;
-if (process.argv[0] == "sudo") {
+var indexOffset = 1;
+if ((process.argv[1]||"").indexOf("cdeploy") == -1) {
 	indexOffset += 1;
 }
 
@@ -62,7 +62,7 @@ $c.syncroit(function*(){
 		key_name = "master_id_rsa";
 
 	//--------environment related
-	var env = global.SOCKET_PORT = process.argv[1 + indexOffset] || (yield question('What tier/environment is this server? (PROD): ')) || "PROD";
+	var env = global.ENV = process.argv[1 + indexOffset] || (yield question('What tier/environment is this server? (PROD): ')) || "PROD";
 	var sport = global.SOCKET_PORT = process.argv[2 + indexOffset] || (yield question('What socket port do you want to use? (4900): ')) || 4900;
 	var hport = global.HTTP_PORT = process.argv[3 + indexOffset] || (yield question('What server port do you want to use? (4800): ')) || 4800;
 	var authu = global.HTTP_AUTH_USERNAME = process.argv[4 + indexOffset] || (yield question('What HTTP Auth username do you want to use? (admin): ')) || 'admin';
@@ -110,7 +110,7 @@ $c.syncroit(function*(){
 
 	var buildname;
 	//--------git related
-	if (process.argv[8 + indexOffset] || $c.isNull(process.argv[8 + indexOffset]) && process.argv.length > 2 + indexOffset) {
+	if (process.argv[8 + indexOffset] || $c.isNull(process.argv[8 + indexOffset]) && process.argv.length < 2 + indexOffset) {
 		var skip = yield question('Let\'s create a project or enter \'skip\' to do this later: ');
 		if (!skip) {
 			var gitUrl = process.argv[8 + indexOffset] || (yield question('What is the GitHub or BitBucket SSH url: '));
@@ -120,7 +120,7 @@ $c.syncroit(function*(){
 			var createDeployKey = process.argv[11 + indexOffset] || (yield question('Is your ssh key already registered as a deploy key in Git? (no): ')) || "no";
 			var url = process.argv[12 + indexOffset] || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
 			var protocol = "http";
-			global.HTTP_PORT = 4800;
+
 			var host;
 
 			if ($c.startsWith(url, "http")) {
