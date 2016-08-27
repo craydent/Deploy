@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.18                             /*/
+/*/ Craydent LLC deploy-v0.1.19                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -15,10 +15,7 @@ function createDeployKey(data) {
 				'User-Agent': data.repo_owner + "-" + data.project_name
 			},
 			method: "POST",
-			data: {"title": data.key_name, "key": data.content, "read_only": true},
-			onsuccess: function (data) {
-				$c.logit(data);
-			}
+			data: {"title": data.key_name, "key": data.content, "read_only": true}
 		});
 	} else if ($c.contains(data.git_address,'git@bitbucket.org')) {
 		return $c.ajax({
@@ -29,10 +26,7 @@ function createDeployKey(data) {
 				'User-Agent': data.repo_owner + "-" + data.project_name
 			},
 			method: "POST",
-			data: {"label": data.key_name, "key": data.content},
-			onsuccess: function (data) {
-				$c.logit(data);
-			}
+			data: {"label": data.key_name, "key": data.content}
 		});
 	}
 }
@@ -52,9 +46,6 @@ function createWebhook(data) {
 				config: {url: url, content_type: "json"},
 				events: ["push", "pull_request"],
 				active: true
-			},
-			onsuccess: function (data) {
-				$c.logit(data);
 			}
 		});
 	} else if ($c.contains(data.git_address,'git@bitbucket.org')) {
@@ -71,9 +62,6 @@ function createWebhook(data) {
 				url: url,
 				events: ["repo:push", "pullrequest:fulfilled"],
 				active: true
-			},
-			onsuccess: function (data) {
-				$c.logit(data);
 			}
 		});
 	}

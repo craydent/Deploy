@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.18                             /*/
+/*/ Craydent LLC deploy-v0.1.19                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -30,11 +30,27 @@ const readline = require('readline');
 const fs = require('fs');
 const git = require('../node/git_actions');
 const BASE_PATH = "/var/craydentdeploy/";
-const NODE_PATH = "/var/craydentdeploy/nodejs/craydent-deploy/node/";
-const PROJECT_PATH = "/var/craydentdeploy/nodejs/craydent-deploy/";
-const GIT_PATH = "/var/craydentdeploy/git/";
-const LOG_PATH = "/var/craydentdeploy/log/craydent-deploy/";
-const KEY_PATH = "/var/craydentdeploy/key/";
+const NODE_PATH = BASE_PATH + "nodejs/craydent-deploy/node/";
+const PROJECT_PATH = BASE_PATH + "nodejs/craydent-deploy/";
+const GIT_PATH = BASE_PATH + "git/";
+const LOG_BASE_PATH = BASE_PATH + "log/";
+const LOG_PATH = LOG_BASE_PATH + "craydent-deploy/";
+const KEY_PATH = BASE_PATH + "key/";
+
+const yes = {yes: 1, y: 1};
+const no = {no: 1, n: 1};
+
+var apps = [{
+	"name": "craydent-deploy",
+	"servers": ["deploy_server.js"],
+	"logfile": [LOG_PATH + "deploy_server.log"],
+	"size":{},
+	"fd":{},
+	"www": "",
+	"nodejs":"node",
+	"webdir":"",
+	"email":""
+}];
 
 var indexOffset = 1;
 if ((process.argv[1]||"").indexOf("cdeploy") == -1) {
@@ -112,7 +128,7 @@ $c.syncroit(function*(){
 	//--------git related
 	if (process.argv[8 + indexOffset] || $c.isNull(process.argv[8 + indexOffset]) && process.argv.length < 2 + indexOffset) {
 		var skip = yield question('Let\'s create a project or enter \'skip\' to do this later: ');
-		if (!skip) {
+		while (skip != 'skip' && !(skip in no)) {
 			var gitUrl = process.argv[8 + indexOffset] || (yield question('What is the GitHub or BitBucket SSH url: '));
 			buildname = gitUrl.replace(/.*\/(.*)\.git/, '$1');
 			buildname = process.argv[9 + indexOffset] || (yield question('What do you want to call your project (' + buildname + '): ')) || buildname;
@@ -163,6 +179,24 @@ $c.syncroit(function*(){
 			yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
 			yield run('ssh-agent bash -c "ssh-add ' + KEY_PATH + key_name + '; git clone ' + gitUrl + ' ' + GIT_PATH + buildname + '";');
 			yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
+
+
+			var package = $c.include(GIT_PATH + buildname + "/package.json");
+			var server = package.main || "index.js";
+
+			apps.push({
+				"name": buildname,
+				"servers": [server],
+				"logfile": [LOG_BASE_PATH + + buildname + server + ".log"],
+				"size":{},
+				"fd":{},
+				"www": "",
+				"nodejs":"",
+				"webdir":"",
+				"email":email
+			});
+
+			skip = yield question('Add another project? (no): ') || "no";
 		}
 	}
 	//--------end git related
@@ -181,6 +215,7 @@ $c.syncroit(function*(){
 	yield run("cp -r " + __dirname.replace('bin','') + "* " + PROJECT_PATH);
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
 	yield run("echo \"" + ncontent + "\" > " + NODE_PATH + "nodeconfig.js;");
+	yield run("echo \"" + $c.replace_all(JSON.stringify(apps),'"','\\""') + "\" > " + NODE_PATH + "craydent_deploy_config.json;");
 
 	if (buildname) {
 		var p = $c.include(GIT_PATH + buildname + '/package.json');
