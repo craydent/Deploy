@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.22                             /*/
+/*/ Craydent LLC deploy-v0.1.23                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -73,6 +73,8 @@ const rl = readline.createInterface({
 $c.syncroit(function*(){
 	var question = $c.yieldable(rl.question, rl),
 		fsstat = $c.yieldable(fs.stat, fs),
+		fswrite = $c.yieldable(fs.writeFile, fs),
+		fsread = $c.yieldable(fs.readFile, fs),
 		status, answer, ssh_file,
 		yes = {yes:1,y:1},
 		no = {no:1,n:1},
@@ -123,7 +125,7 @@ $c.syncroit(function*(){
 	//--------ssh copy/create
 	if (ssh_file) { yield run('cp ' + ssh_file + ' ' + KEY_PATH + key_name+';'); }
 	else { yield run('ssh-keygen -t rsa -C "' + email + '" -N "" -f ' + KEY_PATH + key_name + ';'); }
-	var content = fs.readFileSync(KEY_PATH + key_name + ".pub",{encoding:'utf8'});
+	var content = yield fsread(KEY_PATH + key_name + ".pub",{encoding:'utf8'});
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';chmod 644 ' + KEY_PATH + key_name + ".pub");
 	//--------end ssh copy/create
 
@@ -228,17 +230,18 @@ $c.syncroit(function*(){
 			var server = p.main || "";
 			yield run(PROJECT_PATH + 'shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
 
-			p = JSON.parseAdvanced(p);
 			if (pconfig) {
+				p = JSON.parseAdvanced(p);
 				var routes = $c.getProperty(p, 'cproxy.routes') || {};
 				pconfig.routes = $c.merge(pconfig.routes, routes);
-				fs.writeFileSync(cproxy_path, JSON.stringify(pconfig, null, 2));
 			}
 		}
 	}
-	var dconfig = $c.include(__dirname + '/../package.json') || {};
-	pconfig.routes = $c.merge(pconfig.routes, $c.getProperty(dconfig, 'cproxy.routes') || {});
-
+	if (pconfig) {
+		var dconfig = $c.include(__dirname + '/../package.json') || {};
+		pconfig.routes = $c.merge(pconfig.routes, $c.getProperty(dconfig, 'cproxy.routes') || {});
+		fswrite(cproxy_path, JSON.stringify(pconfig, null, 2));
+	}
 	yield run("nohup node " + NODE_PATH + "deploy_server.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > " + LOG_PATH + "deploy_server.js.log 2>&1 &");
 	//--------end move app and start deploy service
 
