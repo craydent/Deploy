@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.21                             /*/
+/*/ Craydent LLC deploy-v0.1.22                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -85,6 +85,9 @@ $c.syncroit(function*(){
 	var authu = global.HTTP_AUTH_USERNAME = process.argv[4 + indexOffset] || (yield question('What HTTP Auth username do you want to use? (admin): ')) || 'admin';
 	var authp = global.HTTP_AUTH_PASSWORD = process.argv[5 + indexOffset] || (yield question('What HTTP Auth password do you want to use? (admin): ')) || 'admin';
 	var scuid = global.SAC = $c.cuid();
+	var cproxy_path = '/usr/local/lib/node_modules/@craydent/craydent-proxy/pconfig.json';
+	var pconfig = $c.include(cproxy_path) || $c.include(cproxy_path = '/usr/local/lib/node_modules/craydent-proxy/pconfig.json');
+
 	//--------end environment related
 
 	//--------ssh related
@@ -124,14 +127,15 @@ $c.syncroit(function*(){
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';chmod 644 ' + KEY_PATH + key_name + ".pub");
 	//--------end ssh copy/create
 
-	var buildname;
+	var buildnames = [];
 	//--------git related
 	if (process.argv[8 + indexOffset] || $c.isNull(process.argv[8 + indexOffset]) && process.argv.length < 2 + indexOffset) {
 		var skip = yield question('Let\'s create a project or enter \'skip\' to do this later: ');
 		while (skip != 'skip' && !(skip in no)) {
 			var gitUrl = process.argv[8 + indexOffset] || (yield question('What is the GitHub or BitBucket SSH url: '));
-			buildname = gitUrl.replace(/.*\/(.*)\.git/, '$1');
+			var buildname = gitUrl.replace(/.*\/(.*)\.git/, '$1');
 			buildname = process.argv[9 + indexOffset] || (yield question('What do you want to call your project (' + buildname + '): ')) || buildname;
+			buildnames.push(buildname);
 			var setupWebHooks = process.argv[10 + indexOffset] || (yield question('Set up Webhooks for continuous integration? (yes): ')) || "yes";
 			var createDeployKey = process.argv[11 + indexOffset] || (yield question('Is your ssh key already registered as a deploy key in Git? (no): ')) || "no";
 			var url = process.argv[12 + indexOffset] || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
@@ -173,7 +177,7 @@ $c.syncroit(function*(){
 				project_name: project_name,
 				git_user: gitUser,
 				git_password: gitPassword
-			}));
+			},!!pconfig));
 
 			yield run("rm -rf " + GIT_PATH + buildname + ";");
 			yield run("mkdir -p " + GIT_PATH + buildname + ";");
@@ -217,23 +221,24 @@ $c.syncroit(function*(){
 	yield run("echo \"" + ncontent + "\" > " + NODE_PATH + "nodeconfig.js;");
 	yield run("echo \"" + $c.replace_all(JSON.stringify(apps),'"','\\""') + "\" > " + NODE_PATH + "craydent_deploy_config.json;");
 
-	if (buildname) {
-		var p = $c.include(GIT_PATH + buildname + '/package.json');
-		var server = p.main || "";
-		yield run(PROJECT_PATH + 'shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
+	if (buildnames.length) {
+		for (var i = 0, len = buildnames.length; i < len; i++) {
+			var buildname = buildnames[i];
+			var p = $c.include(GIT_PATH + buildname + '/package.json');
+			var server = p.main || "";
+			yield run(PROJECT_PATH + 'shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
 
-		var cproxy_path = '/usr/local/lib/node_modules/@craydent/craydent-proxy/pconfig.json';
-
-		var pconfig = $c.include(cproxy_path) || $c.include(cproxy_path = '/usr/local/lib/node_modules/craydent-proxy/pconfig.json');
-		p = JSON.parseAdvanced(p);
-		if (pconfig) {
-			var routes = $c.getProperty(p,'cproxy.routes') || {};
-			var dconfig = $c.include('../package.json') || {};
-			routes = $c.merge(routes, $c.getProperty(dconfig,'cproxy.routes') || {});
-			pconfig.routes = $c.merge(pconfig.routes, routes);
-			fs.writeFileSync(cproxy_path,JSON.stringify(pconfig, null, 2));
+			p = JSON.parseAdvanced(p);
+			if (pconfig) {
+				var routes = $c.getProperty(p, 'cproxy.routes') || {};
+				pconfig.routes = $c.merge(pconfig.routes, routes);
+				fs.writeFileSync(cproxy_path, JSON.stringify(pconfig, null, 2));
+			}
 		}
 	}
+	var dconfig = $c.include(__dirname + '/../package.json') || {};
+	pconfig.routes = $c.merge(pconfig.routes, $c.getProperty(dconfig, 'cproxy.routes') || {});
+
 	yield run("nohup node " + NODE_PATH + "deploy_server.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > " + LOG_PATH + "deploy_server.js.log 2>&1 &");
 	//--------end move app and start deploy service
 

@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.21                             /*/
+/*/ Craydent LLC deploy-v0.1.22                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -30,8 +30,8 @@ function createDeployKey(data) {
 		});
 	}
 }
-function createWebhook(data) {
-	var url = data.protocol + "://" + data.host + ":" + global.HTTP_PORT + "/build/" + data.name + "/" + global.SAC;
+function createWebhook(data, cproxy) {
+	var url = data.protocol + "://" + data.host + (cproxy ? "" : ":" + global.HTTP_PORT) + "/build/" + data.name + "/" + global.SAC;
 	if ($c.contains(data.git_address,'git@github.com')) {
 		return $c.ajax({
 			url: "https://api.github.com/repos/" + data.repo_owner + "/" + data.project_name + "/hooks",
