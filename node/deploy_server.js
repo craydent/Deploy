@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.20                             /*/
+/*/ Craydent LLC deploy-v0.1.21                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -31,14 +31,15 @@ var actions = include('./config/actions.json'),
     deploying = {},
     apps = include('./craydent_deploy_config.json'),
     nconfig = include('./nodeconfig.js'),
-    shelldir = '../shell_scripts/',
+    shelldir = __dirname + '/../shell_scripts/',
     fswrite = yieldable(fs.writeFile,fs),
     fsreaddir = yieldable(fs.readdir,fs),
     fsread = yieldable(fs.readFile,fs),
     fsexists = yieldable(fs.exists,fs),
     fsopen = yieldable(fs.open,fs),
     fsstat = yieldable(fs.stat,fs),
-    config = {apps:apps,keys:["master_id_rsa"]};;
+    config = {apps:apps,keys:["master_id_rsa"]},
+    io;
 
 syncroit(function *(){
     if (!apps) {
@@ -68,7 +69,7 @@ syncroit(function *(){
         global.SAC = global.SAC || cuid();
         yield writeNodeConfig();
     }
-    var io = require('socket.io')(SOCKET_PORT);//.of("deploy");
+    io = require('socket.io')(SOCKET_PORT);
     logit('socket start on port: ' + SOCKET_PORT);
 
     // store all keys to config.keys variable as a string of names
@@ -202,42 +203,29 @@ syncroit(function *(){
                 socket.emit("showsshkey", dt);
             })
         });
-        function _exec (process) {
-            return syncroit(function* (){
-                var func = function (code, output, message) {
-                    console.log(message);
-                    io.emit("process_complete",{code:code,output:output});
-                    return arguments;
-                };
-                var exec_it = yieldable(exec);
-                var args = yield exec_it(process);
-                return func.apply(this,args);
-            });
-        }
     });
 });
+function _exec (process) {
+    return syncroit(function* (){
+        var func = function (code, output, message) {
+            console.log(message);
+            io.emit("process_complete",{code:code,output:output});
+            return arguments;
+        };
+        var exec_it = yieldable(exec);
+        var args = yield exec_it(process);
+        return func.apply(this,args);
+    });
+}
 function buildit(data){
     return syncroit(function*() {
         logit('deploy', data);
-        var i = 0;
         var appobj = apps.where({name: data.name})[0] || {};
-        console.log(i++,appobj,apps);
         var name = appobj.name;
         logit(appobj);
-        console.log(i++, data.passcode == SAC && name && actions[data.action]);
         if (data.passcode == SAC && name && actions[data.action]) {
-            console.log(i++);
             deploying[name] = true;
-            console.log(i++);
-            //_exec("echo \"user is $USER\";", foo);
-            //_exec(shelldir + "deploy_script.sh " + name + " " + actions[data.action] +
-            //    " " + (appobj.www || "''") +
-            //    " " + (appobj.nodejs || "''") +
-            //    " " + (appobj.webdir || "''") +
-            //    " '" + appobj.servers.join(" ") + "'" +
-            //    " '" + (global.ENV || "prod") + "'", callback);
             yield _exec("echo \"user is $USER\";");
-            console.log(i++);
             var args  = yield _exec(shelldir + "deploy_script.sh " + name + " " + actions[data.action] +
                 " " + (appobj.www || "''") +
                 " " + (appobj.nodejs || "''") +
@@ -248,7 +236,6 @@ function buildit(data){
             delete deploying[name];
             return args;
         }
-        console.log(i++);
     });
 }
 
@@ -298,7 +285,7 @@ var server = $c.createServer(function* (req, res) {
 server.all("/build/${name}/${passcode}", function* (req, res, params) {
     var self = this;
     params.action = "build";
-    var args = buildit(params),code = args[0], output = args[1];
+    var args = yield buildit(params),code = args[0], output = args[1];
     self.send(!code ? 200 : 500, {code:code,output:output});
 });
 logit('http start on port: ' + HTTP_PORT);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.20                             /*/
+/*/ Craydent LLC deploy-v0.1.21                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -61,7 +61,7 @@ var run = $c.yieldable(exec);
 
 if($c.include(NODE_PATH + 'nodeconfig')) {
 	return $c.syncroit(function*(){
-		yield run(__dirname + "/../shell_scripts/node_script.sh \"deploy\" \"deploy_server.js\" \"node/\";");
+		yield run(__dirname + "/../shell_scripts/node_script.sh \"craydent-deploy\" \"deploy_server.js\" \"node/\";");
 		process.exit();
 	});
 }
@@ -72,6 +72,7 @@ const rl = readline.createInterface({
 });
 $c.syncroit(function*(){
 	var question = $c.yieldable(rl.question, rl),
+		fsstat = $c.yieldable(fs.stat, fs),
 		status, answer, ssh_file,
 		yes = {yes:1,y:1},
 		no = {no:1,n:1},
@@ -89,9 +90,8 @@ $c.syncroit(function*(){
 	//--------ssh related
 	if (!process.argv[6 + indexOffset]) {
 		try {
-			status = fs.statSync("~/.ssh/id_rsa.pub");
-		} catch (e) {
-		}
+			status = (yield fsstat("~/.ssh/id_rsa.pub"))[1];
+		} catch (e) { }
 		if (status) { // ssh key found
 			answer = yield question('Found a ssh key "id_rsa.pub".  Do you want to use this? (yes): ');
 			if (answer in yes) {
@@ -148,11 +148,10 @@ $c.syncroit(function*(){
 
 			var repo_owner = gitUrl.replace(/.*:(.*)?\/.*\.git/, '$1');
 			var project_name = gitUrl.replace(/.*:.*?\/(.*)\.git/, '$1');
-			if (!(createDeployKey in yes)) {
+			if (createDeployKey in no) {
 				var gitUser = process.argv[13 + indexOffset] || (yield question('If you would like us to add the ssh to your git account, type your username (Enter): '));
 				if (gitUser) {
 					var gitPassword = process.argv[14 + indexOffset] || (yield hidden("Enter your password: "));
-					//git@bitbucket.org:craydent/craydent-proxy.git  git@github.com:hartclark/t-bone.git
 					yield git.createDeployKey({
 						git_address: gitUrl,
 						repo_owner: repo_owner,
@@ -175,27 +174,28 @@ $c.syncroit(function*(){
 				git_user: gitUser,
 				git_password: gitPassword
 			}));
+
+			yield run("rm -rf " + GIT_PATH + buildname + ";");
 			yield run("mkdir -p " + GIT_PATH + buildname + ";");
 			yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
 			yield run('ssh-agent bash -c "ssh-add ' + KEY_PATH + key_name + '; git clone ' + gitUrl + ' ' + GIT_PATH + buildname + '";');
 			yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
 
 
-			var package = $c.include(GIT_PATH + buildname + "/package.json");
-			var server = package.main || "index.js";
+			var pkg = $c.include(GIT_PATH + buildname + "/package.json");
+			var server = pkg.main || "index.js";
 
 			apps.push({
 				"name": buildname,
 				"servers": [server],
-				"logfile": [LOG_BASE_PATH + + buildname + server + ".log"],
-				"size":{},
-				"fd":{},
+				"logfile": [LOG_BASE_PATH + +buildname + server + ".log"],
+				"size": {},
+				"fd": {},
 				"www": "",
-				"nodejs":"",
-				"webdir":"",
-				"email":email
+				"nodejs": "",
+				"webdir": "",
+				"email": email
 			});
-
 			skip = (yield question('Add another project? (no): ')) || "no";
 		}
 	}
@@ -243,14 +243,13 @@ $c.syncroit(function*(){
 });
 function hidden(query) {
 	return new Promise(function(res) {
-		var stdin = process.openStdin();
 		process.stdin.on("data", function (char) {
 			char = char + "";
 			switch (char) {
 				case "\n":
 				case "\r":
 				case "\u0004":
-					stdin.pause();
+					rl.pause();
 					break;
 				default:
 					process.stdout.write("\033[2K\033[200D" + query + Array(rl.line.length + 1).join("*"));
