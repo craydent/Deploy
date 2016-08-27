@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.19                             /*/
+/*/ Craydent LLC deploy-v0.1.20                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -196,7 +196,7 @@ $c.syncroit(function*(){
 				"email":email
 			});
 
-			skip = yield question('Add another project? (no): ') || "no";
+			skip = (yield question('Add another project? (no): ')) || "no";
 		}
 	}
 	//--------end git related
