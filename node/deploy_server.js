@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.24                             /*/
+/*/ Craydent LLC deploy-v0.1.25                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -19,18 +19,19 @@ require('craydent/global');
 
 $c.DEBUG_MODE = true;
 const BASE_PATH = "/var/craydentdeploy/";
-const NODE_PATH = "/var/craydentdeploy/nodejs/craydent-deploy/node/";
-const PROJECT_PATH = "/var/craydentdeploy/nodejs/craydent-deploy/";
-const LOG_BASE_PATH = "/var/craydentdeploy/log/";
-const LOG_PATH = "/var/craydentdeploy/log/craydent-deploy/";
-const KEY_PATH = "/var/craydentdeploy/key/";
+const PROJECT_PATH = BASE_PATH + "nodejs/craydent-deploy/";
+const NODE_PATH = PROJECT_PATH + "node/";
+const CONFIG_PATH = BASE_PATH + "config/craydent-deploy/";
+const LOG_BASE_PATH = BASE_PATH + "log/";
+const LOG_PATH = LOG_BASE_PATH + "/craydent-deploy/";
+const KEY_PATH = BASE_PATH + "key/";
 
 var fs = require('fs');
 var git = require('./git_actions');
 var actions = include('./config/actions.json'),
     deploying = {},
-    apps = include('./craydent_deploy_config.json'),
-    nconfig = include('./nodeconfig.js'),
+    apps = include(CONFIG_PATH + 'craydent_deploy_config.json'),
+    nconfig = include(CONFIG_PATH + 'nodeconfig.js'),
     shelldir = __dirname + '/../shell_scripts/',
     fswrite = yieldable(fs.writeFile,fs),
     fsreaddir = yieldable(fs.readdir,fs),
@@ -54,7 +55,7 @@ syncroit(function *(){
             "webdir":"",
             "email":""
         }];
-        yield fswrite(NODE_PATH + "craydent_deploy_config.json", JSON.stringify(apps));
+        yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(apps));
     }
     config.apps = apps;
 
@@ -126,7 +127,7 @@ syncroit(function *(){
                         webdir: data.webdir || "",
                         email: data.email
                     });
-                    yield fswrite("./craydent_deploy_config.json", JSON.stringify(apps));
+                    yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(apps));
 
                     var dt = yield getsshkey(data.name);
 
@@ -334,7 +335,7 @@ function start_app(obj) {
     }
 }
 function writeNodeConfig() {
-    return fswrite("./nodeconfig.js",
+    return fswrite(CONFIG_PATH + "nodeconfig.js",
             "global.SOCKET_PORT = " + global.SOCKET_PORT +
             ";\nglobal.HTTP_PORT = " + global.HTTP_PORT +
             ";\nglobal.SAC = '" + global.SAC + "';" +

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.24                             /*/
+/*/ Craydent LLC deploy-v0.1.25                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -30,6 +30,7 @@ const readline = require('readline');
 const fs = require('fs');
 const git = require('../node/git_actions');
 const BASE_PATH = "/var/craydentdeploy/";
+const CONFIG_PATH = BASE_PATH + "config/craydent-deploy/";
 const NODE_PATH = BASE_PATH + "nodejs/craydent-deploy/node/";
 const PROJECT_PATH = BASE_PATH + "nodejs/craydent-deploy/";
 const GIT_PATH = BASE_PATH + "git/";
@@ -59,7 +60,7 @@ if ((process.argv[1]||"").indexOf("cdeploy") == -1) {
 
 var run = $c.yieldable(exec);
 
-if($c.include(NODE_PATH + 'nodeconfig')) {
+if($c.include(CONFIG_PATH + 'nodeconfig')) {
 	return $c.syncroit(function*(){
 		yield run(__dirname + "/../shell_scripts/node_script.sh \"craydent-deploy\" \"deploy_server.js\" \"node/\";");
 		process.exit();
@@ -87,8 +88,8 @@ $c.syncroit(function*(){
 	var authu = global.HTTP_AUTH_USERNAME = process.argv[4 + indexOffset] || (yield question('What HTTP Auth username do you want to use? (admin): ')) || 'admin';
 	var authp = global.HTTP_AUTH_PASSWORD = process.argv[5 + indexOffset] || (yield question('What HTTP Auth password do you want to use? (admin): ')) || 'admin';
 	var scuid = global.SAC = $c.cuid();
-	var cproxy_path = '/usr/local/lib/node_modules/@craydent/craydent-proxy/pconfig.json';
-	var pconfig = $c.include(cproxy_path) || $c.include(cproxy_path = '/usr/local/lib/node_modules/craydent-proxy/pconfig.json');
+	var cproxy_path = '/var/craydentdeploy/config/craydent-proxy/pconfig.json';
+	var pconfig = $c.include(cproxy_path);
 
 	//--------end environment related
 
@@ -220,8 +221,8 @@ $c.syncroit(function*(){
 	yield run("mkdir -p " + LOG_PATH + ";");
 	yield run("cp -r " + __dirname.replace('bin','') + "* " + PROJECT_PATH);
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
-	yield run("echo \"" + ncontent + "\" > " + NODE_PATH + "nodeconfig.js;");
-	yield run("echo \"" + $c.replace_all(JSON.stringify(apps),'"','\\""') + "\" > " + NODE_PATH + "craydent_deploy_config.json;");
+	yield run("echo \"" + ncontent + "\" > " + CONFIG_PATH + "nodeconfig.js;");
+	yield run("echo \"" + $c.replace_all(JSON.stringify(apps),'"','\\""') + "\" > " + CONFIG_PATH + "craydent_deploy_config.json;");
 
 	if (buildnames.length) {
 		for (var i = 0, len = buildnames.length; i < len; i++) {
