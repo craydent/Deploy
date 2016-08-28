@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.23                             /*/
+/*/ Craydent LLC deploy-v0.1.24                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -235,6 +235,8 @@ function buildit(data){
             console.log(args);
             delete deploying[name];
             return args;
+        } else {
+            return "Access Denid";
         }
     });
 }
@@ -277,7 +279,7 @@ var server = $c.createServer(function* (req, res) {
         return self.end();
     }
     console.log('file: ' + path);
-    var args = fsread(path,'utf8'),err = args[0],data = args[1];
+    var args = yield fsread(path,'utf8'),err = args[0],data = args[1];
 
     if (err) { return self.end(); }
     return self.end(fillTemplate(data,config));
