@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.25                             /*/
+/*/ Craydent LLC deploy-v0.1.26                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -219,6 +219,7 @@ $c.syncroit(function*(){
 
 	yield run("mkdir -p " + PROJECT_PATH + ";");
 	yield run("mkdir -p " + LOG_PATH + ";");
+	yield run("mkdir -p " + CONFIG_PATH + ";");
 	yield run("cp -r " + __dirname.replace('bin','') + "* " + PROJECT_PATH);
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
 	yield run("echo \"" + ncontent + "\" > " + CONFIG_PATH + "nodeconfig.js;");
