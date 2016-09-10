@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.1.26                             /*/
+#/*/ Craydent LLC deploy-v0.1.27                             /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -80,14 +80,14 @@ www_sync()
 restart_node()
 {
     echo 'restart node';
-    sudo bash $1 $2 "$3" $4 $5;
+    sudo bash "$1" "$2" "$3" "$4" "$5";
 }
 
 # $1=>full node path
 stop_node()
 {
     echo 'stop node';
-    sudo bash $1 stop;
+    sudo bash "$1" stop;
 }
 
 # $1=>full node path
@@ -96,6 +96,7 @@ npm_install()
     echo 'running npm install';
     cd $1;
     sudo npm uninstall;
+    sudo rm -r node_modules;
     sudo npm install;
 }
 
@@ -104,56 +105,56 @@ npm_install()
 case $2 in
 start)
     if [ -n "$6" ]; then
-        restart_node $scripts/node_script.sh $1 $6 $4;
+        restart_node $scripts/node_script.sh "$1" "$6" "$4";
     fi
 ;;
 restart)
     if [ -n "$6" ]; then
-        restart_node $scripts/node_script.sh $1 $6 $4;
+        restart_node $scripts/node_script.sh "$1" "$6" "$4";
     fi
 ;;
 sync)
     if [ -n "$3" ] && [ -n "$5" ]; then
-        www_sync $gitpath $4 $gitpath/$5 $3;
+        www_sync $gitpath "$4" $gitpath/$5 "$3";
     fi
 ;;
 pull)
     #archive_files $archive $gitpath;
-    git_pull $gitpath $gitpath/$5 $nodepath $7;
+    git_pull $gitpath $gitpath/$5 "$nodepath" "$7";
 ;;
 build)
-    archive_files $archive $nodepath;
-    git_pull $gitpath $gitpath/$5 $nodepath $7;
+    archive_files "$archive" "$nodepath";
+    git_pull $gitpath $gitpath/$5 "$nodepath" "$7";
     if [ -n "$3" ] && [ -n "$5" ]; then
-        www_sync $gitpath $4 $gitpath/$5 $3;
+        www_sync "$gitpath" "$4" $gitpath/$5 "$3";
     fi
     if [ -e "$nodepath/$4/package.json" ]; then
         npm_install $nodepath/$4;
     fi
     if [ -n "$6" ]; then
-        restart_node $scripts/node_script.sh $1 $6 $4;
+        restart_node $scripts/node_script.sh "$1" "$6" "$4";
     fi
 ;;
 stop)
     if [ -n "$6" ]; then
-        restart_node $scripts/node_script.sh $1 $6 $4 "stop";
+        restart_node $scripts/node_script.sh "$1" "$6" "$4" "stop";
     fi
 ;;
 pullsync)
-    archive_files $archive $nodepath;
-    git_pull $gitpath $gitpath/$5 $nodepath $7;
+    archive_files "$archive" "$nodepath";
+    git_pull "$gitpath" $gitpath/$5 "$nodepath" "$7";
     if [ -n "$3" ] && [ -n "$5" ]; then
-        www_sync $gitpath $4 $gitpath/$5 $3;
+        www_sync "$gitpath" "$4" $gitpath/$5 "$3";
     fi
 ;;
 pullrestart)
-    archive_files $archive $nodepath;
-    git_pull $gitpath $gitpath/$5 $nodepath $7;
+    archive_files "$archive" "$nodepath";
+    git_pull "$gitpath" $gitpath/$5 "$nodepath" "$7";
     if [ -e "$nodepath/$4/package.json" ]; then
         npm_install $nodepath/$4;
     fi
     if [ -n "$6" ]; then
-        restart_node $scripts/node_script.sh $1 $6 $4;
+        restart_node $scripts/node_script.sh "$1" "$6" "$4";
     fi
 ;;
 npminstall)

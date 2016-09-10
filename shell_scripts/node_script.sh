@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.1.26                             /*/
+#/*/ Craydent LLC deploy-v0.1.27                             /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -15,11 +15,12 @@
 #sudo mkdir -p /var/craydentdeploy/nodejs/$1;
 #cd /var/craydentdeploy/nodejs/$1;
 nodepath=$3
-if [ -z "$3" ]; then
-    nodepath="$nodepath/";
-fi
-LEN=${#nodepath}-1
-if [ "${nodepath:LEN}" != "/" ]; then
+#if [ -z "$3" ]; then
+#    nodepath="$nodepath/";
+#fi
+echo "node path: $3"
+LEN=${#nodepath}-1;
+if [ "${nodepath:LEN}" != "/" -a LEN -ge 0 ]; then
   nodepath=$nodepath"/"
 fi
 nodedir='/var/craydentdeploy/nodejs';

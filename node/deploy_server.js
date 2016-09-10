@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.26                             /*/
+/*/ Craydent LLC deploy-v0.1.27                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -19,6 +19,8 @@ require('craydent/global');
 
 $c.DEBUG_MODE = true;
 const BASE_PATH = "/var/craydentdeploy/";
+const GIT_BASE_PATH = BASE_PATH + "git/";
+const CONFIG_BASE_PATH = BASE_PATH + "config/";
 const PROJECT_PATH = BASE_PATH + "nodejs/craydent-deploy/";
 const NODE_PATH = PROJECT_PATH + "node/";
 const CONFIG_PATH = BASE_PATH + "config/craydent-deploy/";
@@ -161,7 +163,7 @@ syncroit(function *(){
                     var exists = yield fsexists(path);
 
                     if (!exists) { return; }
-                    args = fsread(path, 'utf8');
+                    args = yield fsread(path, 'utf8');
                     var err = args[0], data = args[1];
 
                     var obj = {error: true, message: err};
@@ -234,6 +236,18 @@ function buildit(data){
                 " '" + appobj.servers.join(" ") + "'" +
                 " '" + (global.ENV || "prod") + "'");
             console.log(args);
+            if ($c.startsWithAny(data.action,"build","pull","npm")) {
+                var cproxy_path = CONFIG_BASE_PATH + 'craydent-proxy/pconfig.json';
+                var pconfig = $c.include(cproxy_path);
+                if (pconfig) {
+                    var p = $c.include(GIT_BASE_PATH + name + '/package.json');
+                    p = JSON.parseAdvanced(p);
+                    var routes = $c.getProperty(p, 'cproxy.routes') || {};
+                    pconfig.routes = $c.merge(pconfig.routes, routes);
+                    yield fswrite(cproxy_path, JSON.stringify(pconfig, null, 2));
+                }
+
+            }
             delete deploying[name];
             return args;
         } else {
@@ -241,7 +255,11 @@ function buildit(data){
         }
     });
 }
-
+function rest_action(self, action, params) {
+    params.action = action;
+    var args = yield buildit(params),code = args[0], output = args[1];
+    self.send(!code ? 200 : 500, {code:code,output:output});
+}
 // create http server
 // the front facing files are in the public folder
 var server = $c.createServer(function* (req, res) {
@@ -286,11 +304,33 @@ var server = $c.createServer(function* (req, res) {
     return self.end(fillTemplate(data,config));
 }).listen(HTTP_PORT);
 server.all("/build/${name}/${passcode}", function* (req, res, params) {
-    var self = this;
-    params.action = "build";
-    var args = yield buildit(params),code = args[0], output = args[1];
-    self.send(!code ? 200 : 500, {code:code,output:output});
+    rest_action(this,"build",params);
 });
+server.all("/backup/${name}/${passcode}", function* (req, res, params) {
+    rest_action(this,"backup",params);
+});
+server.all("/npm/${command}/${name}/${passcode}", function* (req, res, params) {
+    rest_action(this,"npm" + params.command,params);
+});
+server.all("/pull/${name}/${passcode}", function* (req, res, params) {
+    rest_action(this,"backup",params);
+});
+server.all("/pull/${command}/${name}/${passcode}", function* (req, res, params) {
+    rest_action(this,"pull" + params.command,params);
+});
+server.all("/restart/${name}/${passcode}", function* (req, res, params) {
+    rest_action(this,"restart",params);
+});
+server.all("/start/${name}/${passcode}", function* (req, res, params) {
+    rest_action(this,"start",params);
+});
+server.all("/stop/${name}/${passcode}", function* (req, res, params) {
+    rest_action(this,"stop",params);
+});
+server.all("/sync/${name}/${passcode}", function* (req, res, params) {
+    rest_action(this,"sync",params);
+});
+
 logit('http start on port: ' + HTTP_PORT);
 
 
