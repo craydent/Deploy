@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.27                             /*/
+/*/ Craydent LLC deploy-v0.1.28                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -256,9 +256,11 @@ function buildit(data){
     });
 }
 function rest_action(self, action, params) {
-    params.action = action;
-    var args = yield buildit(params),code = args[0], output = args[1];
-    self.send(!code ? 200 : 500, {code:code,output:output});
+    return $c.syncroit(function*(){
+        params.action = action;
+        var args = yield buildit(params),code = args[0], output = args[1];
+        self.send(!code ? 200 : 500, {code:code,output:output});
+    });
 }
 // create http server
 // the front facing files are in the public folder

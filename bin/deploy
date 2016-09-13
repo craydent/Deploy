@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.27                             /*/
+/*/ Craydent LLC deploy-v0.1.28                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -95,7 +95,15 @@ if (!~(process.argv[1]||"").indexOf("cdeploy")) { // doesn't contain cdeploy
 	indexOffset += 1;
 }
 
-var run = $c.yieldable(exec);
+const rl = readline.createInterface({
+	input: process.stdin,
+	output: process.stdout
+});
+const run = $c.yieldable(exec);
+const question = $c.yieldable(rl.question, rl);
+const fsstat = $c.yieldable(fs.stat, fs);
+const fswrite = $c.yieldable(fs.writeFile, fs);
+const fsread = $c.yieldable(fs.readFile, fs);
 
 if($c.include(CONFIG_PATH + 'nodeconfig')) {
 	return $c.syncroit(function*(){
@@ -132,15 +140,12 @@ if($c.include(CONFIG_PATH + 'nodeconfig')) {
 				}
 				yield $c.parallelEach(arr);
 			}
+			console.log('Completed');
 		}
 		process.exit();
 	});
 }
 
-const rl = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout
-});
 function deploy_script (buildnames, sport, hport, authu, authp) {
 	return $c.syncroit(function*() {
 		var pconfig = $c.include(CPROXY_PATH);
@@ -172,11 +177,18 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 		var buildname = gitUrl.replace(/.*\/(.*)\.git/, '$1');
 		buildname = name || (yield question('What do you want to call your project (' + buildname + '): ')) || buildname;
 		var setupWebHooks = create_webhooks || (yield question('Set up Webhooks for continuous integration? (yes): ')) || "yes";
-		var createDeployKey = create_deploy_key || (yield question('Is your ssh key already registered as a deploy key in Git? (no): ')) || "no";
-		var url = deploy_url || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
+		var createDeployKey = create_deploy_key || (yield question('Do you want to add your ssh master key in Git? (yes): ')) || "yes";
+		var url = "";
+		if (setupWebHooks in yes || createDeployKey in yes) {
+			url = deploy_url || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
+		}
 		var protocol = "http";
 
 		var host;
+
+		if ($c.startsWith(gitUrl, "http")) {
+			gitUrl = gitUrl.replace(/https?:\/\/.*?@(.*?)\/(.*?)/);
+		}
 
 		if ($c.startsWith(url, "http")) {
 			var parts = url.split(':');
@@ -184,10 +196,14 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 			global.HTTP_PORT = $c.strip(parts[2], "/") || global.HTTP_PORT;
 			host = $c.strip(parts[1], "/");
 		}
+		'https://cinada@bitbucket.org/craql/empty-the-nest.git'
+		'git@bitbucket.org:craql/empty-the-nest.git'
 
+		'https://github.com/hart/t-bone.git'
+		'git@github.com:hart/t-bone.git'
 		var repo_owner = gitUrl.replace(/.*:(.*)?\/.*\.git/, '$1');
 		var project_name = gitUrl.replace(/.*:.*?\/(.*)\.git/, '$1');
-		if (createDeployKey in no) {
+		if (createDeployKey in yes) {
 			gitUser = gitUser || (yield question('If you would like us to add the ssh to your git account, type your username (Enter): '));
 			if (gitUser) {
 				gitPassword = gitPassword || (yield hidden("Enter your password: "));
@@ -247,22 +263,23 @@ function ssh_script() {
 			status = (yield fsstat("~/.ssh/id_rsa.pub"))[1];
 		} catch (e) { }
 		if (status) { // ssh key found
-			answer = yield question('Found a ssh key "id_rsa.pub".  Do you want to use this? (yes): ');
+			answer = (yield question('Found a ssh key "id_rsa.pub".  Do you want to use this? (yes): ')) || "yes";
 			if (answer in yes) {
-				ssh_file = "~/.ssh/id_rsa.pub";
+				return "~/.ssh/id_rsa.pub";
 			}
-		} else { // ssh key not found
-			try {
-				status = (yield fsstat(ssh_file = KEY_PATH + "master_id_rsa.pub"))[1];
-			} catch (e) { }
-			if (status) { // ssh key found
-				answer = yield question('Found deploy ssh master key.  Do you want to use this? (yes): ');
-				if (answer in yes) {
-					ssh_file = KEY_PATH + "master_id_rsa.pub";
-				}
-			}
-			ssh_file = yield question('Enter to create a key or type the full path to the ssh key? (Enter): ');
 		}
+		// ssh key not found or said not to use the default ssh id_rsa
+		try {
+			status = (yield fsstat(ssh_file = KEY_PATH + "master_id_rsa.pub"))[1];
+		} catch (e) { }
+		if (status) { // ssh key found
+			answer = (yield question('Found deploy ssh master key.  Do you want to use this? (yes): ')) || "yes";
+			if (answer in yes) {
+				return ssh_file;
+			}
+		}
+		ssh_file = yield question('Enter to create a key or type the full path to the ssh key? (Enter): ');
+
 		return ssh_file;
 
 	});
@@ -277,7 +294,7 @@ function updateRoutes() {
 		}
 	});
 }
-function writeNodeConfig(sport,hport,scuid,authu,authp,email,env){
+function writeNodeConfig(sport,hport,scuid,authu,authp,email,env,fqdn){
 	return $c.syncroit(function*() {
 		var ncontent = "global.SOCKET_PORT = " + sport +
 			";\nglobal.HTTP_PORT = " + hport +
@@ -285,16 +302,13 @@ function writeNodeConfig(sport,hport,scuid,authu,authp,email,env){
 			"\nglobal.HTTP_AUTH_USERNAME = '" + (authu || "admin") + "';" +
 			"\nglobal.HTTP_AUTH_PASSWORD = '" + (authp || "admin") + "';" +
 			"\nglobal.EMAIL = '" + (email || "" ) + "';" +
-			"\nglobal.ENV = '" + (env || "prod") + "';";
+			"\nglobal.ENV = '" + (env || "prod") + "';" +
+			"\nglobal.FQDN = '" + (fqdn || "") + "';";
 		return yield run("echo \"" + ncontent + "\" > " + CONFIG_PATH + "nodeconfig.js;");
 	});
 }
 $c.syncroit(function*(){
-	var question = $c.yieldable(rl.question, rl),
-		fsstat = $c.yieldable(fs.stat, fs),
-		fswrite = $c.yieldable(fs.writeFile, fs),
-		fsread = $c.yieldable(fs.readFile, fs),
-		ssh_file,
+	var ssh_file,
 		yes = {yes:1,y:1},
 		no = {no:1,n:1};
 
@@ -362,8 +376,7 @@ $c.syncroit(function*(){
 	yield run("mkdir -p " + CONFIG_PATH + ";");
 	yield run("cp -r " + __dirname.replace('bin','') + "* " + PROJECT_PATH);
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
-	yield run("echo \"" + ncontent + "\" > " + CONFIG_PATH + "nodeconfig.js;");
-	yield writeNodeConfig(sport,hport,scuid,authu,authp,email,env);
+	yield writeNodeConfig(sport,hport,scuid,authu,authp,email,env,fqdn);
 	yield run("echo \"" + $c.replace_all(JSON.stringify(apps),'"','\\""') + "\" > " + CONFIG_PATH + "craydent_deploy_config.json;");
 
 	if (buildnames.length) {

@@ -1,12 +1,12 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.1.27                             /*/
+/*/ Craydent LLC deploy-v0.1.28                             /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
 /*/---------------------------------------------------------/*/
 /*/---------------------------------------------------------/*/
 function createDeployKey(data) {
-	if ($c.contains(data.git_address,'git@github.com')) {
+	if ($c.contains(data.git_address,'git@github.com') || $c.contains(data.git_address,'https://github.com')) {
 		return $c.ajax({
 			url: "https://api.github.com/repos/" + data.repo_owner + "/" + data.project_name + "/keys",
 			headers: {
@@ -17,7 +17,7 @@ function createDeployKey(data) {
 			method: "POST",
 			data: {"title": data.key_name, "key": data.content, "read_only": true}
 		});
-	} else if ($c.contains(data.git_address,'git@bitbucket.org')) {
+	} else if ($c.contains(data.git_address,'@bitbucket.org')) {
 		return $c.ajax({
 			url: "https://api.bitbucket.org/1.0/repositories/" + data.repo_owner + "/" + data.project_name + "/deploy-keys",
 			headers: {

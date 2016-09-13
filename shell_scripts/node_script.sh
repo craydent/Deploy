@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.1.27                             /*/
+#/*/ Craydent LLC deploy-v0.1.28                             /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -19,7 +19,7 @@ nodepath=$3
 #    nodepath="$nodepath/";
 #fi
 echo "node path: $3"
-LEN=${#nodepath}-1;
+LEN=$((${#nodepath}-1));
 if [ "${nodepath:LEN}" != "/" -a LEN -ge 0 ]; then
   nodepath=$nodepath"/"
 fi
@@ -35,7 +35,7 @@ ps aux | egrep "node\s$nodedir/$1/$nodepath($list)".*|awk '{print $2}' | xargs k
 echo "$4 parameter4";
 echo "after kill $1 $2 $3 $4";
 if [ -z "$4" ]; then
-echo "$nodedir/$1/$3/";
+echo "$nodedir/$1/$3";
     logBasePath="/var/craydentdeploy/log/$1";
     mkdir -p "$logBasePath/archive";
 
