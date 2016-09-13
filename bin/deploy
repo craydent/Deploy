@@ -184,10 +184,10 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 		}
 		var protocol = "http";
 
-		var host;
+		var host, url_parts = gitUrl.match(/(.*):(.*)?\/(.*)\.git/);
 
 		if ($c.startsWith(gitUrl, "http")) {
-			gitUrl = gitUrl.replace(/https?:\/\/.*?@(.*?)\/(.*?)/);
+			url_parts = gitUrl.match(/https?:\/\/(?:.*?@)?(.*)?\/(.*)?\/(.*)?\.git.*/,"git@$1:$2/$3.git");
 		}
 
 		if ($c.startsWith(url, "http")) {
@@ -196,13 +196,10 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 			global.HTTP_PORT = $c.strip(parts[2], "/") || global.HTTP_PORT;
 			host = $c.strip(parts[1], "/");
 		}
-		'https://cinada@bitbucket.org/craql/empty-the-nest.git'
-		'git@bitbucket.org:craql/empty-the-nest.git'
-
-		'https://github.com/hart/t-bone.git'
-		'git@github.com:hart/t-bone.git'
-		var repo_owner = gitUrl.replace(/.*:(.*)?\/.*\.git/, '$1');
-		var project_name = gitUrl.replace(/.*:.*?\/(.*)\.git/, '$1');
+		//var repo_owner = gitUrl.replace(/.*:(.*)?\/.*\.git/, '$1');
+		//var project_name = gitUrl.replace(/.*:.*?\/(.*)\.git/, '$1');
+		var repo_owner = url_parts[2];
+		var project_name = url_parts[3];
 		if (createDeployKey in yes) {
 			gitUser = gitUser || (yield question('If you would like us to add the ssh to your git account, type your username (Enter): '));
 			if (gitUser) {
