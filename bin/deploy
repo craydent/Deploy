@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.2.0                              /*/
+/*/ Craydent LLC deploy-v0.2.1                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -112,7 +112,11 @@ if($c.include(CONFIG_PATH + 'nodeconfig')) {
 			yield run(__dirname + "/../shell_scripts/node_script.sh \"craydent-deploy\" \"deploy_server.js\" \"node/\";");
 		} else {
 			var cconfig = $c.include(CONFIG_PATH + "craydent_deploy_config.json");
-			var project = process.argv[2 + indexOffset], projects = $c.where(cconfig,{name: project});
+			var project =  process.argv[2 + indexOffset] || (yield question('What project do you want to ' + action + '? (type \'all\' to perform on all projects): '));
+
+			while (!project) { project =  (yield question('What project do you want to ' + action + '? (type \'all\' to perform on all projects): ')); }
+
+			var projects = $c.where(cconfig,{name: project});
 			if (project == "all") {
 				projects = cconfig;
 			}

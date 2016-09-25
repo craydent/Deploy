@@ -1,6 +1,6 @@
 {
   "name": "@craydent/craydent-deploy",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "craydent deploy helper",
   "main": "deploy_server.js",
   "scripts": {
@@ -8,91 +8,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@bitbucket.org:cinada/craydent-deploy.git"
+    "url": "git@bitbucket.org:craydent/craydent-deploy.git"
   },
   "bin": {
     "cdeploy": "./bin/deploy"
   },
-  "cproxy":{
-    "routes":{
-      "deploy.craydentbridge.com": [{
-        "host": ["localhost"],
-        "port": ["4900"],
-        "verbs": ["get", "post", "put", "delete"],
-        "allow": ["*"],
-        "headers": {},
-        "path": "/socket.io/",
-        "request_path": "/socket.io/*",
-        "domain": "deploy.craydentbridge.com",
-        "http_auth": false
-      },{
-        "host": ["craydent.com"],
-        "port": ["80"],
-        "verbs": ["get", "post", "put", "delete"],
-        "allow": ["*"],
-        "headers": {},
-        "path": "/JsonObjectEditor/",
-        "request_path": "/JsonObjectEditor/*",
-        "domain": "deploy.craydentbridge.com",
-        "http_auth": false
-      },{
-        "host": ["localhost"],
-        "port": ["4900"],
-        "verbs": ["get", "post", "put", "delete"],
-        "allow": ["*"],
-        "headers": {},
-        "path": "/",
-        "request_path": "/:4900/*",
-        "domain": "deploy.craydentbridge.com",
-        "http_auth": false
-      },{
-        "host": ["localhost"],
-        "port": ["4800"],
-        "verbs": ["get", "post", "put", "delete"],
-        "allow": ["*"],
-        "headers": {},
-        "path": "/",
-        "request_path": "/*",
-        "domain": "deploy.craydentbridge.com",
-        "http_auth": false
-      }],
-      "craydentbridge.com": [{
-        "host": ["craydent.com"],
-        "port": ["80"],
-        "verbs": ["get", "post", "put", "delete"],
-        "allow": ["*"],
-        "headers": {},
-        "path": "/JsonObjectEditor/",
-        "request_path": "/JsonObjectEditor/*",
-        "domain": "craydentbridge.com",
-        "http_auth": false
-      },{
-        "host": ["localhost"],
-        "port": ["4800"],
-        "verbs": ["get", "post", "put", "delete"],
-        "allow": ["*"],
-        "headers": {},
-        "path": "/",
-        "request_path": "/deploy/?*",
-        "domain": "craydentbridge.com",
-        "http_auth": false
-      },{
-        "host": ["localhost"],
-        "port": ["4900"],
-        "verbs": ["get", "post", "put", "delete"],
-        "allow": ["*"],
-        "headers": {},
-        "path": "/",
-        "request_path": "/:4900/*",
-        "domain": "craydentbridge.com",
-        "http_auth": false
-      }]
-    }
-  },
   "dependencies": {
     "shelljs": "0.7.4",
     "socket.io": "^1.4.8",
-    "craydent" : "^0.6.11"
+    "craydent" : "^0.6.13"
   },
   "keywords": [
     "craydent",
