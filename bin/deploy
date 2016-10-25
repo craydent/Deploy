@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.3.0                              /*/
+/*/ Craydent LLC deploy-v0.3.1                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -130,7 +130,7 @@ if (process.argv[COMMAND] == 'reset') {
 		var status = false;
 		try {
 			status = (yield fsstat(CPROXY_PATH))[1];
-			status && FQDN && (yield run(__dirname + "/../shell_scripts/rm_routes_script.sh \"" + FQDN + "\";"));
+			status && (yield run(__dirname + "/../shell_scripts/rm_routes_script.sh \"" + FQDN.replace(/https?:\/\/(.*?)(\/|\?|#|:|$).*/,'$1') + "\";"));
 		} catch (e) { }
 		console.log('Complete');
 		process.exit();
@@ -143,7 +143,7 @@ if (process.argv[COMMAND] == 'uninstall') {
 		var status = false;
 		try {
 			status = (yield fsstat(CPROXY_PATH))[1];
-			status && FQDN && (yield run(__dirname + "/../shell_scripts/rm_routes_script.sh '" + FQDN + "';"));
+			status && FQDN && (yield run(__dirname + "/../shell_scripts/rm_routes_script.sh '" + FQDN.replace(/https?:\/\/(.*?)(\/|\?|#|:|$).*/,'$1') + "';"));
 		} catch (e) { }
 		yield run("npm uninstall -g " + require('../package.json').name + ";");
 		console.log('Complete');
@@ -172,9 +172,9 @@ if(nodeconfig) {
 				yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(apps, null, 2));
 				var appobj = $c.where(apps,{name:bname})[0];
 				if (appobj) {
-					var npath = BASE_PATH + "nodejs/" + appobj.name;
+					var npath = BASE_PATH + "nodejs/" + bname;
 					yield run("mkdir -p " + npath + ";");
-					yield run("cp -r " + GIT_PATH + (app.nodejs || "") + "* " + npath);
+					yield run("cp -r " + GIT_PATH + bname + "/" + (app.nodejs || "") + "* " + npath);
 					//run(__dirname + "/../shell_scripts/deploy_script.sh \"" + bname + "\" \"build\" " + " " + (appobj.www || "''") +
 					//	" " + (appobj.nodejs || "''") +
 					//	" " + (appobj.webdir || "''") +

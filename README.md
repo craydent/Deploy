@@ -1,6 +1,6 @@
 <img src="http://craydent.com/JsonObjectEditor/img/svgs/craydent-logo.svg" width=75 height=75/>
 
-# Craydent Deploy 0.3.0 added
+# Craydent Deploy 0.3.1 added
 **by Clark Inada**
 
 This standalone module is a deployment, continuous integration (CI), and log viewing platform for NodeJS written in node.  This craydent-deploy can be used in conjunction with [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy) and routes can be automatically added when the package.json of the app to be deployed has a configuration properly set.  Craydent-deploy can add git projects and set up CI and allows you to view real-time logs on the server for the added projects.
@@ -47,6 +47,22 @@ cdeploy initialization can take 14 arguments.  When arguments are missing, the C
 13. git username - username for the git user able to add webhooks and keys. (this is not stored and used one time)
 14. git password - password for the git user able to add webhooks and keys. (this is not stored and used one time)
 
+#### Reset
+
+```shell
+$ sudo cdeploy reset
+```
+
+cdeploy reset takes no arguments.  This will remove configuration/log files and reset the state to a freshly installed state.
+
+#### Uninstall
+
+```shell
+$ sudo cdeploy uninstall
+```
+
+cdeploy uninstall takes no arguments.  This will remove configuration/log files and and uninstalled the global module.
+
 #### Add Project
 Usage with arguments (variables) to add projects
 ```shell
@@ -75,7 +91,7 @@ Available actions:
 * pullrestart - Performs a pull and restart
 * pullsync - Performs a pull and sync
 * restart - Performs a stop and start
-* rm - Removes a project from Craydent Deploy and all files (Backup is performed before removing and ff there are Craydent Proxy routes, they will be removed as well).
+* rm - Removes a project from Craydent Deploy and all files (Backup is performed before removing and if there are Craydent Proxy routes, they will be removed as well).
 * start - Performs a nohup node on the main NodeJS file
 * stop - Kills the process of the project
 * sync - Sync performs an rsync on the configured source to destination (typically used when your node application is a web application with a NodeJS backend)
