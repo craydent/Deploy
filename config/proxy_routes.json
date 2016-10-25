@@ -1,0 +1,49 @@
+{
+	"routes": {
+		"${domain}": [{
+			"host": ["localhost"],
+			"port": ["${socket_port}"],
+			"verbs": ["get", "post", "put", "delete"],
+			"allow": ["*"],
+			"headers": {},
+			"path": "/socket.io/",
+			"request_path": "/socket.io/*",
+			"domain": "${domain}",
+			"name":"deploy_socket",
+			"http_auth": false
+		}, {
+			"host": ["craydent.com"],
+			"port": ["80"],
+			"verbs": ["get", "post", "put", "delete"],
+			"allow": ["*"],
+			"headers": {},
+			"path": "/JsonObjectEditor/",
+			"request_path": "/JsonObjectEditor/*",
+			"domain": "${domain}",
+			"name":"deploy_joe",
+			"http_auth": false
+		}, {
+			"host": ["localhost"],
+			"port": ["${socket_port}"],
+			"verbs": ["get", "post", "put", "delete"],
+			"allow": ["*"],
+			"headers": {},
+			"path": "/",
+			"request_path": "/:4900/*",
+			"domain": "${domain}",
+			"name":"deploy_socket2",
+			"http_auth": false
+		}, {
+			"host": ["localhost"],
+			"port": ["${http_port}"],
+			"verbs": ["get", "post", "put", "delete"],
+			"allow": ["*"],
+			"headers": {},
+			"path": "/",
+			"request_path": "/*",
+			"domain": "${domain}",
+			"name":"deploy_http",
+			"http_auth": false
+		}]
+	}
+}

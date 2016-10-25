@@ -1,24 +1,29 @@
-#!/bin/bash
-#/*/---------------------------------------------------------/*/
+#!/usr/bin/env bash
 #/*/ Craydent LLC deploy-v0.3.0                              /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
 #/*/---------------------------------------------------------/*/
 #/*/---------------------------------------------------------/*/
+# $1=>project
+# $2=>project path
 
-# $1=>project name
-# $2=>email address
 
+
+projectname=$1;
 if [ -z "$1" ]; then
-    echo "You must provide a name";
-    exit 1;
+    echo "A project name must be provided.";
+    exit;
 fi
+path=$2;
 if [ -z "$2" ]; then
-    echo "You must provide an email address";
-    exit 1;
+    path='/var/craydent/';
 fi
-
-ssh-keygen -t rsa -C "$2" -N '' -f /var/craydent/key/$1;
-
-exit 0;
+echo 'removing config files:';
+rm -rf ${path}config/${projectname};
+echo 'removing git files:';
+rm -rf ${path}git/${projectname};
+echo 'removing node files:';
+rm -rf ${path}nodejs/${projectname};
+echo 'removing log files:';
+rm -rf ${path}log/${projectname};

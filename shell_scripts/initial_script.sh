@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.2.1                              /*/
+#/*/ Craydent LLC deploy-v0.3.0                              /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -27,8 +27,8 @@ if [ -z "$1" ]; then
 fi
 ./create_dirs.sh $2 $3;
 
-cd /var/craydentdeploy/key/;
+cd /var/craydent/key/;
 
-ssh-keygen -t rsa -C "$email" -N '' -f /var/craydentdeploy/key/master_id_rsa;
+ssh-keygen -t rsa -C "$email" -N '' -f /var/craydent/key/master_id_rsa;
 
-sudo chown -R $uname /var/craydentdeploy/;
+sudo chown -R $uname /var/craydent/;

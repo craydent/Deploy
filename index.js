@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.2.1                              /*/
+/*/ Craydent LLC deploy-v0.3.0                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -18,15 +18,18 @@ require('shelljs/global');
 require('craydent/global');
 
 $c.DEBUG_MODE = true;
-const BASE_PATH = "/var/craydentdeploy/";
+const BASE_PATH = "/var/craydent/";
 const GIT_BASE_PATH = BASE_PATH + "git/";
 const CONFIG_BASE_PATH = BASE_PATH + "config/";
 const PROJECT_PATH = BASE_PATH + "nodejs/craydent-deploy/";
-const NODE_PATH = PROJECT_PATH + "node/";
 const CONFIG_PATH = BASE_PATH + "config/craydent-deploy/";
 const LOG_BASE_PATH = BASE_PATH + "log/";
 const LOG_PATH = LOG_BASE_PATH + "/craydent-deploy/";
 const KEY_PATH = BASE_PATH + "key/";
+
+
+const CPROXY_PATH = CONFIG_BASE_PATH + 'craydent-proxy/pconfig.json';
+var pconfig = $c.include(CPROXY_PATH, true);
 
 var fs = require('fs');
 var git = require('./git_actions');
@@ -146,7 +149,7 @@ syncroit(function *(){
                         protocol: socket.handshake.headers.origin.contains('https') ? "https" : "http"
                     };
                     yield git.createDeployKey(params);
-                    yield git.createWebhook(params);
+                    yield git.createWebhook(params, pconfig);
                 }
             });
         });
@@ -237,14 +240,12 @@ function buildit(data){
                 " '" + (global.ENV || "prod") + "'");
             console.log(args);
             if ($c.startsWithAny(data.action,"build","pull","npm")) {
-                var cproxy_path = CONFIG_BASE_PATH + 'craydent-proxy/pconfig.json';
-                var pconfig = $c.include(cproxy_path);
-                if (pconfig) {
+                if (pconfig = $c.include(CPROXY_PATH, true)) {
                     var p = $c.include(GIT_BASE_PATH + name + '/package.json');
                     p = JSON.parseAdvanced(p);
                     var routes = $c.getProperty(p, 'cproxy.routes') || {};
-                    pconfig.routes = $c.merge(pconfig.routes, routes);
-                    yield fswrite(cproxy_path, JSON.stringify(pconfig, null, 2));
+                    pconfig.routes = $c.merge(pconfig.routes, routes, "recurse");
+                    yield fswrite(CPROXY_PATH, JSON.stringify(pconfig, null, 2));
                 }
 
             }
@@ -384,7 +385,8 @@ function writeNodeConfig() {
             "\nglobal.HTTP_AUTH_USERNAME = '" + (global.HTTP_AUTH_USERNAME || "admin") + "';" +
             "\nglobal.HTTP_AUTH_PASSWORD = '" + (global.HTTP_AUTH_PASSWORD || "admin") + "';" +
             "\nglobal.EMAIL = '" + (global.EMAIL || "" ) + "';" +
-            "\nglobal.ENV = '" + (global.ENV || "prod") + "';");
+            "\nglobal.ENV = '" + (global.ENV || "prod") + "';" +
+            "\nglobal.FQDN = '" + (global.FQDN) + "';");
 }
 function getsshkey(name){
     return syncroit(function*(){

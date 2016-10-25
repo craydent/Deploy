@@ -12,6 +12,6 @@ if [ -z "$2" ]; then
     exit 1;
 fi
 
-ssh-keygen -t rsa -C "$2" -N '' -f /var/craydentdeploy/key/$1;
+ssh-keygen -t rsa -C "$2" -N '' -f /var/craydent/key/$1;
 
 exit 0;

@@ -1,0 +1,1 @@
+[{"name":"craydent-deploy","servers":["deploy_server.js"],"logfile":["/var/craydent/log/craydent-deploy/deploy_server.log"],"size":{},"fd":{},"www":"","nodejs":"node","webdir":"","email":""}]

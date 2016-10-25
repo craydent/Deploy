@@ -1,3 +1,4 @@
+#!/bin/bash
 #/*/---------------------------------------------------------/*/
 #/*/ Craydent LLC deploy-v0.3.0                              /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
@@ -6,11 +7,11 @@
 #/*/---------------------------------------------------------/*/
 #/*/---------------------------------------------------------/*/
 
-sshkeyname="$3";
-if [ -z "$3" ]; then
-    sshkeyname="master_id_rsa"
-fi
+# $1=>domain
+echo "removing routes from $1";
+sudo cproxy rm $1 "deploy_sockeyt";
+sudo cproxy rm $1 "deploy_socket2";
+sudo cproxy rm $1 "deploy_joe";
+sudo cproxy rm $1 "deploy_http";
 
-cd /var/craydent/git/;
-ssh-agent bash -c "ssh-add /var/craydent/key/${sshkeyname}; git clone $1";
-ln -s $2
+exit

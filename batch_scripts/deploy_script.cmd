@@ -7,7 +7,7 @@
 # $5=>relative web origin path
 # $6=>list of servers
 
-path="/var/craydentdeploy";
+path="/var/craydent";
 archive="$path/backup/$1";
 scripts="$PWD/../shell_scripts";
 gitpath="$path/git/$1";

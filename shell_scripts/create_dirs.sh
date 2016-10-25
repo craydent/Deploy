@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.2.1                              /*/
+#/*/ Craydent LLC deploy-v0.3.0                              /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -20,11 +20,11 @@ if [ -z "$1" ]; then
     rootdir='/var';
 fi
 sudo id -u $uname &>/dev/null || sudo useradd $uname;
-sudo mkdir -p $rootdir/craydentdeploy/config/;
-sudo mkdir -p $rootdir/craydentdeploy/git/;
-sudo mkdir -p $rootdir/craydentdeploy/nodejs/;
-sudo mkdir -p $rootdir/craydentdeploy/log/;
-sudo mkdir -p $rootdir/craydentdeploy/backup/;
-sudo mkdir -p $rootdir/craydentdeploy/key/;
+sudo mkdir -p $rootdir/craydent/config/;
+sudo mkdir -p $rootdir/craydent/git/;
+sudo mkdir -p $rootdir/craydent/nodejs/;
+sudo mkdir -p $rootdir/craydent/log/;
+sudo mkdir -p $rootdir/craydent/backup/;
+sudo mkdir -p $rootdir/craydent/key/;
 #sudo mkdir -p $rootdir/scripts/;
-sudo chmod -R 775 /var/craydentdeploy/;
+sudo chmod -R 775 /var/craydent/;

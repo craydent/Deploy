@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.2.1                              /*/
+#/*/ Craydent LLC deploy-v0.3.0                              /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -15,7 +15,7 @@
 # $6=>list of servers
 # $7=>env tier
 
-path="/var/craydentdeploy";
+path="/var/craydent";
 archive="$path/backup/$1";
 scripts="$path/nodejs/craydent-deploy/shell_scripts";
 gitpath="$path/git/$1";
@@ -39,7 +39,7 @@ git_pull()
 {
     cd $1;
     echo 'pulling from git';
-    ssh-agent bash -c "ssh-add /var/craydentdeploy/key/master_id_rsa; git pull -f;";
+    ssh-agent bash -c "ssh-add /var/craydent/key/master_id_rsa; git pull -f;";
     cd $2;
     echo 'syncing nodejs directories';
     sudo rsync -rtDvO --progress --exclude=".*" ${2} ${3};
