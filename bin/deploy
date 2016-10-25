@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.3.1                              /*/
+/*/ Craydent LLC deploy-v0.3.2                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -173,13 +173,30 @@ if(nodeconfig) {
 				var appobj = $c.where(apps,{name:bname})[0];
 				if (appobj) {
 					var npath = BASE_PATH + "nodejs/" + bname;
+					console.log('creating directory: ' + npath);
 					yield run("mkdir -p " + npath + ";");
-					yield run("cp -r " + GIT_PATH + bname + "/" + (app.nodejs || "") + "* " + npath);
-					//run(__dirname + "/../shell_scripts/deploy_script.sh \"" + bname + "\" \"build\" " + " " + (appobj.www || "''") +
-					//	" " + (appobj.nodejs || "''") +
-					//	" " + (appobj.webdir || "''") +
-					//	" '" + appobj.servers.join(" ") + "'" +
-					//	" '" + (global.ENV || "prod") + "'" + ";")
+					console.log('copying git path ' + GIT_PATH + bname + "/" + (appobj.nodejs || "") + " to " + npath);
+					yield run("cp -r " + GIT_PATH + bname + "/" + (appobj.nodejs || "") + "* " + npath + ";");
+					console.log('building ' + bname);
+					yield run(__dirname + "/../shell_scripts/deploy_script.sh \"" + bname + "\" \"build\" " + " " + (appobj.www || "''") +
+						" " + (appobj.nodejs || "''") +
+						" " + (appobj.webdir || "''") +
+						" '" + appobj.servers.join(" ") + "'" +
+						" '" + (global.ENV || "prod") + "'" + ";");
+
+					var pconfig = $c.include(CPROXY_PATH,true);
+					if (pconfig) {
+						var p = $c.include(GIT_PATH + bname + '/package.json');
+						p = JSON.parseAdvanced(p,null,null,GIT_PATH + bname);
+
+						var routes = $c.getProperty(p, 'cproxy.routes');
+						if (routes) {
+							console.log('adding proxy routes');
+							pconfig.routes = $c.merge(pconfig.routes, routes, "recurse");
+							yield fswrite(CPROXY_PATH, JSON.stringify(pconfig, null, 2));
+						}
+					}
+
 				}
 
 			} else {
@@ -220,7 +237,7 @@ if(nodeconfig) {
 							" '" + (global.ENV || "prod") + "'" + ";");
 						var pkg = $c.include(GIT_PATH + appobj.name + '/package.json');
 						if (pkg) {
-							pkg = JSON.parseAdvanced(pkg);
+							pkg = JSON.parseAdvanced(pkg,null,null,GIT_PATH + appobj.name);
 							var routes = $c.getProperty(pkg, 'cproxy.routes');
 							if (routes) { arr.push(removeRoutes(routes)); }
 						}
@@ -256,7 +273,7 @@ function deploy_script (buildnames, sport, hport, authu, authp) {
 			yield run(PROJECT_PATH + 'shell_scripts/deploy_script.sh ' + buildname + ' pullrestart \'\' \'\' \'\' \'' + server + '\';');
 
 			if (pconfig) {
-				p = JSON.parseAdvanced(p);
+				p = JSON.parseAdvanced(p,null,null,GIT_PATH + buildname);
 				var routes = $c.getProperty(p, 'cproxy.routes') || {};
 				pconfig.routes = $c.merge(pconfig.routes, routes,"recurse");
 			}
@@ -294,7 +311,7 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 		if ($c.startsWith(url, "http")) {
 			var parts = url.split(':');
 			protocol = parts[0] || protocol;
-			global.HTTP_PORT = $c.strip(parts[2], "/") || global.HTTP_PORT;
+			global.HTTP_PORT = $c.strip(parts[2] || "", "/") || global.HTTP_PORT;
 			host = $c.strip(parts[1], "/");
 		}
 		//var repo_owner = gitUrl.replace(/.*:(.*)?\/.*\.git/, '$1');
@@ -374,7 +391,7 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 		apps.push({
 			"name": buildname,
 			"servers": [server],
-			"logfile": [LOG_BASE_PATH + +buildname + server + ".log"],
+			"logfile": [LOG_BASE_PATH + buildname + server + ".log"],
 			"size": {},
 			"fd": {},
 			"www": "",

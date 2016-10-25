@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.3.1                              /*/
+/*/ Craydent LLC deploy-v0.3.2                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -37,7 +37,7 @@ var actions = include('./config/actions.json'),
     deploying = {},
     apps = include(CONFIG_PATH + 'craydent_deploy_config.json'),
     nconfig = include(CONFIG_PATH + 'nodeconfig.js'),
-    shelldir = __dirname + '/../shell_scripts/',
+    shelldir = __dirname + '/shell_scripts/',
     fswrite = yieldable(fs.writeFile,fs),
     fsreaddir = yieldable(fs.readdir,fs),
     fsread = yieldable(fs.readFile,fs),
@@ -238,13 +238,17 @@ function buildit(data){
                 " " + (appobj.webdir || "''") +
                 " '" + appobj.servers.join(" ") + "'" +
                 " '" + (global.ENV || "prod") + "'");
-            console.log(args);
+
             if ($c.startsWithAny(data.action,"build","pull","npm")) {
                 if (pconfig = $c.include(CPROXY_PATH, true)) {
                     var p = $c.include(GIT_BASE_PATH + name + '/package.json');
-                    p = JSON.parseAdvanced(p);
+                    p = JSON.parseAdvanced(p,null,null,GIT_BASE_PATH + name);
                     var routes = $c.getProperty(p, 'cproxy.routes') || {};
-                    pconfig.routes = $c.merge(pconfig.routes, routes, "recurse");
+                    for (var fqdn in routes) {
+                        if (!routes.hasOwnProperty(fqdn)) { continue; }
+                        if (!pconfig.routes[fqdn]) { pconfig.routes[fqdn] = []; }
+                        $c.upsert(pconfig.routes[fqdn], routes[fqdn], "name");
+                    }
                     yield fswrite(CPROXY_PATH, JSON.stringify(pconfig, null, 2));
                 }
 
@@ -307,31 +311,31 @@ var server = $c.createServer(function* (req, res) {
     return self.end(fillTemplate(data,config));
 }).listen(HTTP_PORT);
 server.all("/build/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"build",params);
+    return yield rest_action(this,"build",params);
 });
 server.all("/backup/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"backup",params);
+    return yield rest_action(this,"backup",params);
 });
 server.all("/npm/${command}/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"npm" + params.command,params);
+    return yield rest_action(this,"npm" + params.command,params);
 });
 server.all("/pull/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"backup",params);
+    return yield rest_action(this,"backup",params);
 });
 server.all("/pull/${command}/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"pull" + params.command,params);
+    return yield rest_action(this,"pull" + params.command,params);
 });
 server.all("/restart/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"restart",params);
+    return yield rest_action(this,"restart",params);
 });
 server.all("/start/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"start",params);
+    return yield rest_action(this,"start",params);
 });
 server.all("/stop/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"stop",params);
+    return yield rest_action(this,"stop",params);
 });
 server.all("/sync/${name}/${passcode}", function* (req, res, params) {
-    rest_action(this,"sync",params);
+    return yield rest_action(this,"sync",params);
 });
 
 logit('http start on port: ' + HTTP_PORT);

@@ -1,9 +1,9 @@
 <img src="http://craydent.com/JsonObjectEditor/img/svgs/craydent-logo.svg" width=75 height=75/>
 
-# Craydent Deploy 0.3.1 added
+# Craydent Deploy 0.3.2 added
 **by Clark Inada**
 
-This standalone module is a deployment, continuous integration (CI), and log viewing platform for NodeJS written in node.  This craydent-deploy can be used in conjunction with [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy) and routes can be automatically added when the package.json of the app to be deployed has a configuration properly set.  Craydent-deploy can add git projects and set up CI and allows you to view real-time logs on the server for the added projects.
+This standalone module is a deployment, continuous integration (CI), and log viewing platform for NodeJS written in node.  This craydent-deploy can be used in conjunction with [craydent-proxy](https://www.npmjs.com/package/craydent-proxy) and routes can be automatically added when the package.json of the app to be deployed has a configuration properly set.  Craydent-deploy can add git projects and set up CI and allows you to view real-time logs on the server for the added projects.
 Craydent-deploy needs to creates a webserver and a websocket server and will require assignable ports.
 
 ### Install
@@ -61,7 +61,7 @@ cdeploy reset takes no arguments.  This will remove configuration/log files and 
 $ sudo cdeploy uninstall
 ```
 
-cdeploy uninstall takes no arguments.  This will remove configuration/log files and and uninstalled the global module.
+cdeploy uninstall takes no arguments.  This will remove configuration/log files and and uninstalled the global module but leave all projects that were added.
 
 #### Add Project
 Usage with arguments (variables) to add projects
@@ -132,12 +132,14 @@ $ sudo cdeploy sync '{{Craydent-Deploy}}'
 cdeploy {{action}} requires 1 argument (project name).  When argument is missing, the CLI will ask a for the project name.
 
 
-If [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy) is installed and there are routes in the package.json of the added project, deploy will automatically add the routes to [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy).  The package.json file must contain a property named "cproxy" and follow the route structure of [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy).
+If [craydent-proxy](https://www.npmjs.com/package/craydent-proxy) is installed and there are routes in the package.json of the added project, deploy will automatically add the routes to [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy).  The package.json file must contain a property named "cproxy" and follow the route structure of [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy).
 ```js
 "cproxy":{
     "routes": {
         // these are the domains which the server be requested on 
         "sub.example.com": [{
+            // name is the identifier of the route and must be unique
+            "name": "unique name identifier"
             // host is the destination to forward the request
             "host": ["localhost"],
             // port is the port to forward on the destination
@@ -172,5 +174,6 @@ This will pull the json object from ../routes.json and use the routes_to_add pro
 
  * [GitHub](https://github.com/craydent/Deploy/)
  * [BitBucket](https://bitbucket.org/craydent/deploy)
+ * [GitLab](https://gitlab.com/craydent/deploy)
 
 Craydent-Deploy is released under the [Dual licensed under the MIT or GPL Version 2 licenses](http://craydent.com/license).<br>
