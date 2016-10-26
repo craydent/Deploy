@@ -142,7 +142,7 @@ $ sudo cdeploy sync '{{Craydent-Deploy}}'
 cdeploy {{action}} requires 1 argument (project name).  When argument is missing, the CLI will ask a for the project name.
 
 
-If [craydent-proxy](https://www.npmjs.com/package/craydent-proxy) is installed and there are routes in the package.json of the added project, deploy will automatically add the routes to [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy).  The package.json file must contain a property named "cproxy" and follow the route structure of [craydent-proxy](https://www.npmjs.com/package/@craydent/proxy).
+If [craydent-proxy](https://www.npmjs.com/package/craydent-proxy) is installed and there are routes in the package.json of the added project, deploy will automatically add the routes to [craydent-proxy](https://www.npmjs.com/package/craydent-proxy).  The package.json file must contain a property named "cproxy" and follow the route structure of [craydent-proxy](https://www.npmjs.com/package/craydent-proxy).
 ```js
 "cproxy":{
     "routes": {

@@ -1,5 +1,5 @@
 {
-  "name": "@craydent/deploy",
+  "name": "craydent-deploy",
   "version": "1.0.0",
   "description": "craydent deploy helper",
   "main": "deploy_server.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@bitbucket.org:craydent/craydent-deploy.git"
+    "url": "git@bitbucket.org:craydent/deploy.git"
   },
   "bin": {
     "cdeploy": "./bin/deploy"
