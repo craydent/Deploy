@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.3.4                              /*/
+/*/ Craydent LLC deploy-v1.0.0                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -24,8 +24,12 @@
 	14=>git username
 	15=>git password
 
+version
+	0=>interpreter/node command (not used)
+	1=>node file being executed (not used)
+	2=>version command
 
-actionable commands after initialization
+ actionable commands after initialization
 	0=>interpreter/node command (not used)
 	1=>node file being executed (not used)
 
