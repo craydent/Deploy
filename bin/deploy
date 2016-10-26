@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.3.3                              /*/
+/*/ Craydent LLC deploy-v0.3.4                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -192,7 +192,11 @@ if(nodeconfig) {
 						var routes = $c.getProperty(p, 'cproxy.routes');
 						if (routes) {
 							console.log('adding proxy routes');
-							pconfig.routes = $c.merge(pconfig.routes, routes, "recurse");
+							for (var domain in routes) {
+								if (!routes.hasOwnProperty(domain)) { continue; }
+								pconfig.routes[domain] = pconfig.routes[domain] || [];
+								$c.upsert(pconfig.routes[domain], routes[domain], "name");
+							}
 							yield fswrite(CPROXY_PATH, JSON.stringify(pconfig, null, 2));
 						}
 					}
@@ -237,6 +241,7 @@ if(nodeconfig) {
 							" '" + (global.ENV || "prod") + "'" + ";");
 						var pkg = $c.include(GIT_PATH + appobj.name + '/package.json');
 						if (pkg) {
+							console.log('removing proxy routes');
 							pkg = JSON.parseAdvanced(pkg,null,null,GIT_PATH + appobj.name);
 							var routes = $c.getProperty(pkg, 'cproxy.routes');
 							if (routes) { arr.push(removeRoutes(routes)); }
@@ -275,12 +280,21 @@ function deploy_script (buildnames, sport, hport, authu, authp) {
 			if (pconfig) {
 				p = JSON.parseAdvanced(p,null,null,GIT_PATH + buildname);
 				var routes = $c.getProperty(p, 'cproxy.routes') || {};
-				pconfig.routes = $c.merge(pconfig.routes, routes,"recurse");
+				for (var domain in routes) {
+					if (!routes.hasOwnProperty(domain)) { continue; }
+					pconfig.routes[domain] = pconfig.routes[domain] || [];
+					$c.upsert(pconfig.routes[domain], routes[domain],"name");
+				}
 			}
 		}
 		if (pconfig) {
 			var dconfig = $c.include(__dirname + '/../package.json') || {};
-			pconfig.routes = $c.merge(pconfig.routes, $c.getProperty(dconfig, 'cproxy.routes') || {},"recurse");
+			var routes = $c.getProperty(dconfig, 'cproxy.routes') || {};
+			for (var domain in routes) {
+				if (!routes.hasOwnProperty(domain)) { continue; }
+				pconfig.routes[domain] = pconfig.routes[domain] || [];
+				$c.upsert(pconfig.routes[domain], routes[domain],"name");
+			}
 			yield fswrite(CPROXY_PATH, JSON.stringify(pconfig, null, 2));
 		}
 		yield run("nohup node " + NODE_PATH + "index.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > " + LOG_PATH + "index.js.log 2>&1 &");
@@ -391,7 +405,7 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 		apps.push({
 			"name": buildname,
 			"servers": [server],
-			"logfile": [LOG_BASE_PATH + buildname + server + ".log"],
+			"logfile": [LOG_BASE_PATH + server + ".log"],
 			"size": {},
 			"fd": {},
 			"www": "",
@@ -436,7 +450,11 @@ function updateRoutes(values) {
 		var dconfig;
 		if (pconfig && (dconfig = $c.include(__dirname + '/../package.json'))) {
 			var routes = $c.getProperty(JSON.parseAdvanced(dconfig, null, values), 'cproxy.routes') || {};
-			pconfig.routes = $c.merge(pconfig.routes, routes,"recurse");
+			for (var domain in routes) {
+				if (!routes.hasOwnProperty(domain)) { continue; }
+				pconfig.routes[domain] = pconfig.routes[domain] || [];
+				$c.upsert(pconfig.routes[domain], routes[domain],"name");
+			}
 			yield fswrite(CPROXY_PATH, JSON.stringify(pconfig, null, 2));
 		}
 	});
@@ -450,9 +468,10 @@ function removeRoutes(routes) {
 				var mappings = routes[domain];
 				for (var i = 0, len = mappings.length; i < len; i++) {
 					var index = $c.indexOfAlt(pconfig.routes[domain], mappings[i], function(item, val){
-						return $c.equals(item, val);
+						return item.name == val.name;
 					});
-					if (~index) { $c.remove(pconfig.routes[domain], index); }
+					console.log(index,mappings[i].name);
+					if (~index) { $c.removeAt(pconfig.routes[domain], index); }
 				}
 				if (!pconfig.routes[domain].length) {
 					delete pconfig.routes[domain];

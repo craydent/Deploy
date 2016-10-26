@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v0.3.3                              /*/
+/*/ Craydent LLC deploy-v0.3.4                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -33,10 +33,10 @@ var pconfig = $c.include(CPROXY_PATH, true);
 
 var fs = require('fs');
 var git = require('./git_actions');
-var actions = include('./config/actions.json'),
+var actions = include('./config/actions.json',true),
     deploying = {},
-    apps = include(CONFIG_PATH + 'craydent_deploy_config.json'),
-    nconfig = include(CONFIG_PATH + 'nodeconfig.js'),
+    apps = include(CONFIG_PATH + 'craydent_deploy_config.json',true),
+    nconfig = include(CONFIG_PATH + 'nodeconfig.js',true),
     shelldir = __dirname + '/shell_scripts/',
     fswrite = yieldable(fs.writeFile,fs),
     fsreaddir = yieldable(fs.readdir,fs),
@@ -48,8 +48,8 @@ var actions = include('./config/actions.json'),
     io;
 
 syncroit(function *(){
-    if (!apps) {
-        apps = [{
+    if (!config.apps) {
+        config.apps = [{
             "name": "craydent-deploy",
             "servers": ["deploy_server.js"],
             "logfile": [LOG_PATH + "deploy_server.log"],
@@ -60,7 +60,7 @@ syncroit(function *(){
             "webdir":"",
             "email":""
         }];
-        yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(apps));
+        yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(config.apps, null, 2));
     }
     config.apps = apps;
 
@@ -90,8 +90,8 @@ syncroit(function *(){
     } catch(e) { }
 
 // start all log tails
-    for (var i = 0, len = apps.length; i < len; i++) {
-        start_app(apps[i]);
+    for (var i = 0, len = config.apps.length; i < len; i++) {
+        start_app(config.apps[i]);
     }
     io.on('connection', function (socket) {
         logit('connection made');
@@ -106,7 +106,8 @@ syncroit(function *(){
             syncroit(function*() {
                 logit('gitadd', data);
                 if (data.passcode == SAC || data.sac == SAC) {
-                    var appobj = apps.where({name: data.name})[0];
+                    config.apps = include(CONFIG_PATH + 'craydent_deploy_config.json', true) || config.apps;
+                    var appobj = config.apps.where({name: data.name})[0];
                     if (appobj) {
                         return io.emit("add_error", {code: '1', output: data.name + " already exists."});
                     }
@@ -120,7 +121,7 @@ syncroit(function *(){
                     for (var i = 0, len = servers.length; i < len; i++) {
                         logFiles.push(LOG_BASE_PATH + data.name + "/" + servers[i]);
                     }
-                    apps.push({
+                    config.apps.push({
                         'git': data.git_address,
                         'name': data.name,
                         servers: servers,
@@ -132,7 +133,7 @@ syncroit(function *(){
                         webdir: data.webdir || "",
                         email: data.email
                     });
-                    yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(apps));
+                    yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(config.apps, null, 2));
 
                     var dt = yield getsshkey(data.name);
 
@@ -226,9 +227,9 @@ function _exec (process) {
 function buildit(data){
     return syncroit(function*() {
         logit('deploy', data);
-        var appobj = apps.where({name: data.name})[0] || {};
+        config.apps = include(CONFIG_PATH + 'craydent_deploy_config.json', true);
+        var appobj = config.apps.where({name: data.name})[0] || {};
         var name = appobj.name;
-        logit(appobj);
         if (data.passcode == SAC && name && actions[data.action]) {
             deploying[name] = true;
             yield _exec("echo \"user is $USER\";");
@@ -241,12 +242,12 @@ function buildit(data){
 
             if ($c.startsWithAny(data.action,"build","pull","npm")) {
                 if (pconfig = $c.include(CPROXY_PATH, true)) {
-                    var p = $c.include(GIT_BASE_PATH + name + '/package.json');
+                    var p = $c.include(GIT_BASE_PATH + name + '/package.json',true);
                     p = JSON.parseAdvanced(p,null,null,GIT_BASE_PATH + name);
                     var routes = $c.getProperty(p, 'cproxy.routes') || {};
                     for (var fqdn in routes) {
                         if (!routes.hasOwnProperty(fqdn)) { continue; }
-                        if (!pconfig.routes[fqdn]) { pconfig.routes[fqdn] = []; }
+                        pconfig.routes[fqdn] = pconfig.routes[fqdn] || [];
                         $c.upsert(pconfig.routes[fqdn], routes[fqdn], "name");
                     }
                     yield fswrite(CPROXY_PATH, JSON.stringify(pconfig, null, 2));
@@ -254,15 +255,21 @@ function buildit(data){
 
             }
             delete deploying[name];
+            logit('build complete.');
             return args;
         } else {
-            return "Access Denid";
+            return [500,"Access Denied"];
         }
     });
 }
 function rest_action(self, action, params) {
     return $c.syncroit(function*(){
         params.action = action;
+        if (params.webhook) {
+            buildit(params);
+            self.send(200, {message:"build request received."});
+            return;
+        }
         var args = yield buildit(params),code = args[0], output = args[1];
         self.send(!code ? 200 : 500, {code:code,output:output});
     });

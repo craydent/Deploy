@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v0.3.3                              /*/
+#/*/ Craydent LLC deploy-v0.3.4                              /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -28,7 +28,7 @@ nodepath="$path/nodejs/$1";
 archive_files()
 {
     echo "archiving";
-    tar -zcvf $1.$(date +%F_%R).tar.gz $2;
+    tar -zcvf $1.$(date +%F_%R).tar.gz $2 > /dev/null 2>&1;
 }
 
 # $1=>full git path
@@ -97,7 +97,7 @@ npm_install()
     cd $1;
     sudo npm uninstall;
     sudo rm -r node_modules;
-    sudo npm install;
+    sudo npm install > /dev/null 2>&1;
 }
 
 
