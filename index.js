@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v1.0.0                              /*/
+/*/ Craydent LLC deploy-v1.1.0                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -14,11 +14,55 @@
     6=>http auth username
     7=>http auth password
  */
-require('shelljs/global');
-require('craydent/global');
+const pkg = require('./package.json'),
+    ns = !pkg.name.indexOf('@craydent/') ? "@craydent/" : "";
+
+require(ns + 'craydent/global');
 
 $c.DEBUG_MODE = true;
-const BASE_PATH = "/var/craydent/";
+
+const CL = new CLI({});
+CL
+    .add({
+        option: "-s,--socketport",
+        type:"number",
+        description:"Port number for the socket server to listen on"
+    })
+    .add({
+        option: "-h,httpport",
+        type:"number",
+        description:"Port number for the web server to listen on"
+    })
+    .add({
+        option: "-c,--cuid",
+        type:"string",
+        description:"Token/cuid to use for admin rights to API and web interface"
+    })
+    .add({
+        option: "-u,--httpuser",
+        type:"string",
+        description:"Username for http authentication"
+    })
+    .add({
+        option: "-p,--httppassword",
+        type:"string",
+        description:"Password for http authentication"
+    })
+    .add({
+        option: "-e,--environment",
+        type:"string",
+        description:"Environment for the current server"
+    })
+    .add({
+        option: "-x,--basepath",
+        type:"string",
+        description:"Base path of cdeploy"
+    });
+
+CL.validate();
+
+
+const BASE_PATH = CL.basepath || "/var/craydent/";
 const GIT_BASE_PATH = BASE_PATH + "git/";
 const CONFIG_BASE_PATH = BASE_PATH + "config/";
 const PROJECT_PATH = BASE_PATH + "nodejs/craydent-deploy/";
@@ -26,13 +70,20 @@ const CONFIG_PATH = BASE_PATH + "config/craydent-deploy/";
 const LOG_BASE_PATH = BASE_PATH + "log/";
 const LOG_PATH = LOG_BASE_PATH + "/craydent-deploy/";
 const KEY_PATH = BASE_PATH + "key/";
+const LISTENERS = include('./config/listeners.json',true);
 
 
 const CPROXY_PATH = CONFIG_BASE_PATH + 'craydent-proxy/pconfig.json';
-var pconfig = $c.include(CPROXY_PATH, true);
+var pconfig = include(CPROXY_PATH, true);
 
 var fs = require('fs');
-var git = require('./git_actions');
+var git = require('./libs/git_actions');
+var utils = require('./libs/utils'),
+    writeNodeConfig = utils.writeNodeConfig,
+    encrypt_password = utils.encrypt_password,
+    correct_password = utils.correct_password,
+    authorized = utils.authorized;
+
 var actions = include('./config/actions.json',true),
     deploying = {},
     apps = include(CONFIG_PATH + 'craydent_deploy_config.json',true),
@@ -44,8 +95,38 @@ var actions = include('./config/actions.json',true),
     fsexists = yieldable(fs.exists,fs),
     fsopen = yieldable(fs.open,fs),
     fsstat = yieldable(fs.stat,fs),
-    config = {apps:apps,keys:["master_id_rsa"]},
+    config = {apps:apps,keys:["master_id_rsa"],deploying:deploying},
     io;
+var cb = function(event_type, filename){
+    try {
+        if (event_type == "change") {
+
+            filename == 'nodeconfig.js' ?
+                (nconfig = include(CONFIG_PATH + 'nodeconfig.js',true)) :
+                (apps = include(CONFIG_PATH + 'craydent_deploy_config.json',true)) ;
+        } else if (event_type == "rename") {
+            if (filename == 'nodeconfig.js') {
+                try {
+                    nwatcher && nwatcher.close();
+                    nwatcher = fs.watch(CONFIG_PATH + 'nodeconfig.js', cb);
+                } catch (e) {
+                    e.errno == "ENOENT" ? flog(CONFIG_PATH + "nodeconfig.js not found") : flog(e);
+                }
+            } else {
+                try {
+                    cwatcher && cwatcher.close();
+                    cwatcher = fs.watch(CONFIG_PATH + 'craydent_deploy_config.json', cb);
+                } catch (e) {
+                    e.errno == "ENOENT" ? flog(CONFIG_PATH + "craydent_deploy_config.json not found") : flog(e);
+                }
+            }
+        }
+    } catch (e) {
+        flog(e);
+    }
+}, nwatcher, cwatcher;
+try { nwatcher = fs.watch(CONFIG_PATH + 'nodeconfig.js', cb); } catch (e) {e.errno == "ENOENT" ? flog(CONFIG_PATH + "nodeconfig.js not found") : flog(e); }
+try { cwatcher = fs.watch(CONFIG_PATH + 'craydent_deploy_config.json', cb); } catch (e) {e.errno == "ENOENT" ? flog(CONFIG_PATH + "craydent_deploy_config.json not found") : flog(e); }
 
 syncroit(function *(){
     if (!config.apps) {
@@ -64,16 +145,21 @@ syncroit(function *(){
     }
     config.apps = apps;
 
-    global.SOCKET_PORT = process.argv[2] || global.SOCKET_PORT || 4900;
-    global.HTTP_PORT = process.argv[3] || global.HTTP_PORT || 4800;
-    global.SAC = process.argv[4] || global.SAC;
-    global.HTTP_AUTH_USERNAME = process.argv[5] || global.HTTP_AUTH_USERNAME || "admin";
-    global.HTTP_AUTH_PASSWORD = process.argv[6] || global.HTTP_AUTH_PASSWORD || "admin";
-    global.ENV = process.argv[6] || global.ENV || "prod";
+    global.SOCKET_PORT = CL.socketport || global.SOCKET_PORT || 4900;
+    global.HTTP_PORT = CL.httpport || global.HTTP_PORT || 4800;
+    global.SAC = CL.cuid || global.SAC;
+    global.ENV = CL.environment || global.ENV || "prod";
+    global.HTTP_AUTH = global.HTTP_AUTH || {};
+    var usernames = (CL.httpuser || "admin").split(','),
+        passwords = (CL.httppassword || "admin").split(',');
+    for (var i = 0, len = usernames.length; i < len; i++) {
+        global.HTTP_AUTH[usernames[i]] = global.HTTP_AUTH[usernames[i]] || { "access": ['*'] };
+        global.HTTP_AUTH[usernames[i]].password = encrypt_password(passwords[i]);
+    }
 
     if (nconfig === false) {
         global.SAC = global.SAC || cuid();
-        yield writeNodeConfig();
+        yield writeNodeConfig(CONFIG_PATH);
     }
     io = require('socket.io')(SOCKET_PORT);
     logit('socket start on port: ' + SOCKET_PORT);
@@ -95,14 +181,14 @@ syncroit(function *(){
     }
     io.on('connection', function (socket) {
         logit('connection made');
-        socket.on('deploy', function(data){
+        socket.on(LISTENERS['deploy'], function(data){
             syncroit(function*(){
                 var args = yield buildit(data), code = args[0], output = args[1], message = args[2];
 
                 io.emit("process_complete",{code:code,output:output});
             });
         });
-        socket.on("gitadd", function(data){
+        socket.on(LISTENERS["addgit"], function(data){
             syncroit(function*() {
                 logit('gitadd', data);
                 if (data.passcode == SAC || data.sac == SAC) {
@@ -154,7 +240,7 @@ syncroit(function *(){
                 }
             });
         });
-        socket.on("sshkey", function(data){
+        socket.on(LISTENERS["addssh"], function(data){
             syncroit(function*() {
                 logit('sshkey', data);
                 if (data.passcode == SAC || data.sac == SAC) {
@@ -180,7 +266,7 @@ syncroit(function *(){
                 }
             });
         });
-        socket.on("init", function(data){
+        socket.on(LISTENERS["init"], function(data){
             syncroit(function *() {
                 logit('initializing', data);
                 var eobj = {error: false, message: "already initialized"};
@@ -189,11 +275,20 @@ syncroit(function *(){
                     global.SOCKET_PORT = parseInt(data.ws_port);
                     global.HTTP_PORT = parseInt(data.http_port);
                     global.SAC = data.passcode || data.sac;
-                    global.HTTP_AUTH_USERNAME = data.http_username;
-                    global.HTTP_AUTH_PASSWORD = data.http_password;
+                    //global.HTTP_AUTH_USERNAME = data.http_username || "admin";
+                    //global.HTTP_AUTH_PASSWORD = data.http_password || "admin";
+
+                    global.HTTP_AUTH = global.HTTP_AUTH || {};
+                    var usernames = (data.http_username || "admin").split(','),
+                        passwords = (data.http_password || "admin").split(',');
+                    for (var i = 0, p = 0, len = usernames.length; i < len; i++) {
+                        global.HTTP_AUTH[usernames[i]] = global.HTTP_AUTH[usernames[i]] || { "access": ['*'] };
+                        global.HTTP_AUTH[usernames[i]].password = encrypt_password(passwords[p++] || passwords[p--,--p]);
+                    }
+
                     global.EMAIL = data.email;
                     global.ENV = data.environment;
-                    yield writeNodeConfig();
+                    yield writeNodeConfig(CONFIG_PATH);
                     var args = yield _exec("echo '" + data.password + "' | sudo -S bash " + shelldir + "initial_script.sh " + data.email + " " + (data.rootdir || "/var") + " $USER"),
                         code = args[0], output = args[1], message = args[2];
                     logit(message);
@@ -202,7 +297,7 @@ syncroit(function *(){
                 socket.emit("initialized", eobj);
             });
         });
-        socket.on("getsshkey",function(data){
+        socket.on(LISTENERS["getssh"],function(data){
             syncroit(function *() {
                 if (data.passcode != SAC || data.sac != SAC) { return; }
 
@@ -210,17 +305,33 @@ syncroit(function *(){
                 socket.emit("showsshkey", dt);
             })
         });
+        socket.on(LISTENERS["adduser"],function(data){
+            socket.emit("addadminuser", add_admin_user(data));
+        });
+        socket.on(LISTENERS["removeuser"],function(data){
+            socket.emit("removeadminuser", rm_admin_user(data));
+        });
+        socket.on(LISTENERS["updatepassword"],function(data){
+            socket.emit("updateadminpassword", update_admin(data));
+        });
     });
+    init_webserver();
 });
+function flog(){
+    var prefix = $c.now('M d H:i:s')+' PID[' + process.pid + ']: ';
+    for (var i = 0, len = arguments.length; i < len; i++) {
+        if ($c.isString(arguments[i])) { console.log(prefix + arguments[i]); }
+        else { console.log(prefix, arguments[i]); }
+    }
+}
 function _exec (process) {
     return syncroit(function* (){
         var func = function (code, output, message) {
-            console.log(message);
+            flog(message);
             io.emit("process_complete",{code:code,output:output});
             return arguments;
         };
-        var exec_it = yieldable(exec);
-        var args = yield exec_it(process);
+        var args = yield CL.exec(process);
         return func.apply(this,args);
     });
 }
@@ -241,8 +352,8 @@ function buildit(data){
                 " '" + (global.ENV || "prod") + "'");
 
             if ($c.startsWithAny(data.action,"build","pull","npm")) {
-                if (pconfig = $c.include(CPROXY_PATH, true)) {
-                    var p = $c.include(GIT_BASE_PATH + name + '/package.json',true);
+                if (pconfig = include(CPROXY_PATH, true)) {
+                    var p = include(GIT_BASE_PATH + name + '/package.json',true);
                     p = JSON.parseAdvanced(p,null,null,GIT_BASE_PATH + name);
                     var routes = $c.getProperty(p, 'cproxy.routes') || {};
                     for (var fqdn in routes) {
@@ -263,7 +374,7 @@ function buildit(data){
     });
 }
 function rest_action(self, action, params) {
-    return $c.syncroit(function*(){
+    return syncroit(function*(){
         params.action = action;
         if (params.webhook) {
             buildit(params);
@@ -274,85 +385,131 @@ function rest_action(self, action, params) {
         self.send(!code ? 200 : 500, {code:code,output:output});
     });
 }
+function add_admin_user (data) {
+    var auth = global.HTTP_AUTH;
+    if (auth[data.username]) { return {error:true,message:"user already exists."}; }
+    if (data.passcode != SAC || data.sac != SAC
+    || (!~auth[data.username].access.indexOf('*') && !~auth[data.username].access.indexOf(LISTENERS["adduser"]))) {
+        return {error:true,message:"you do not have sufficient access."};
+    }
+    //if (!~global.HTTP_AUTH_USERNAME.indexOf(data.username)) { return {error:true,message:"user already exists."}; }
+    auth[data.username] = { "access": (data.access || "").split(','), "password": encrypt_password(data.password) };
+    writeNodeConfig(CONFIG_PATH);
+    return {error: false,message:"successfully added user."}
+}
+function rm_admin_user (data) {
+    var auth = global.HTTP_AUTH;
+    if (!auth[data.username]) { return {error:true,message:"user does not exist."}; }
+    if (data.passcode != SAC || data.sac != SAC
+    || (!~auth[data.username].access.indexOf('*') && !~auth[data.username].access.indexOf(LISTENERS["removeuser"]))) {
+        return {error:true,message:"you do not have sufficient access."};
+    }
+    delete auth[data.username];
+    writeNodeConfig(CONFIG_PATH);
+    return {error: false,message:"successfully removed user."}
+}
+function update_admin (data) {
+    var auth = global.HTTP_AUTH;
+    if (!auth[data.username]) { return {error:true,message:"user does not exist."}; }
+    if (data.passcode != SAC || data.sac != SAC
+        || (!~auth[data.username].access.indexOf('*') && !~auth[data.username].access.indexOf(LISTENERS["updateuser"]))) {
+        return {error:true,message:"you do not have sufficient access."};
+    }
+    if (!correct_password(data.old_password, auth[data.username])) { return {error:true,message:"password does not match"}}
+    auth[data.username].password = encrypt_password(data.password);
+    auth[data.username].access = (data.access ? data.access.split(',') : auth[data.username].access) || [];
+    writeNodeConfig(CONFIG_PATH);
+    return {error: false,message:"successfully updated password."}
+}
 // create http server
 // the front facing files are in the public folder
-var server = $c.createServer(function* (req, res) {
-    var self = this,
-        path = self.SERVER_PATH,
-        auth = req.headers['authorization'],
-        auth_header = 'WWW-Authenticate: Basic realm="Deployer Secure Area"';
-    if (path.contains('?')) { path = path.split('?')[0]; }
-    if (path.endsWith('/')) { path += "index.html"; }
-    path = (path.startsWith('/') ? PROJECT_PATH + "public" : PROJECT_PATH + "public/") + path;
-    path.endsWith('.html') && self.header("Content-Type: text/html");
-
-    if (!self.SERVER_PATH.contains(global.SAC) && path.endsWith('.html')) {
-        if (!auth) {     // No Authorization header was passed in so it's the first time the browser hit us
-            self.header(auth_header);
-            return self.end(401, '<html><body>You are trying to access a secure area.  Please login.</body></html>');
+function init_webserver() {
+    var server = createServer(function* (req, res) {
+        var self = this,
+            path = self.SERVER_PATH,
+            hauth = req.headers['authorization'],
+            auth_header = 'WWW-Authenticate: Basic realm="Deployer Secure Area"';
+        if (path.contains('?')) {
+            path = path.split('?')[0];
         }
-
-        var encoded = auth.split(' ')[1];   // Split on a space, the original auth looks like  "Basic Y2hhcmxlczoxMjM0NQ==" and we need the 2nd part
-
-        var buf = new Buffer(encoded, 'base64'),
-            plain_auth = buf.toString(),
-            creds = plain_auth.split(':'),
-            username = creds[0],
-            password = creds[1];
-
-        if (username != global.HTTP_AUTH_USERNAME || password != global.HTTP_AUTH_PASSWORD) {
-            self.header(auth_header);
-            // res.statusCode = 403;   // or alternatively just reject them altogether with a 403 Forbidden
-            self.end(401, '<html><body>You are not authorized to access this page</body></html>');
+        if (path.endsWith('/')) {
+            path += "index.html";
         }
-    }
-    var exists = yield fsexists(path);
-    if (!exists) {
-        console.log('missing file: ' + path,exists);
-        return self.end();
-    }
-    console.log('file: ' + path);
-    var args = yield fsread(path,'utf8'),err = args[0],data = args[1];
+        path = (path.startsWith('/') ? PROJECT_PATH + "public" : PROJECT_PATH + "public/") + path;
+        path.endsWith('.html') && self.header("Content-Type: text/html");
 
-    if (err) { return self.end(); }
-    return self.end(fillTemplate(data,config));
-}).listen(HTTP_PORT);
-server.all("/build/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"build",params);
-});
-server.all("/backup/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"backup",params);
-});
-server.all("/npm/${command}/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"npm" + params.command,params);
-});
-server.all("/pull/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"backup",params);
-});
-server.all("/pull/${command}/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"pull" + params.command,params);
-});
-server.all("/restart/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"restart",params);
-});
-server.all("/start/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"start",params);
-});
-server.all("/stop/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"stop",params);
-});
-server.all("/sync/${name}/${passcode}", function* (req, res, params) {
-    return yield rest_action(this,"sync",params);
-});
+        if (!self.SERVER_PATH.contains(global.SAC) && path.endsWith('.html')) {
+            if (!hauth) {     // No Authorization header was passed in so it's the first time the browser hit us
+                self.header(auth_header);
+                return self.end(401, '<html><body>You are trying to access a secure area.  Please login.</body></html>');
+            }
 
-logit('http start on port: ' + HTTP_PORT);
+            var encoded = hauth.split(' ')[1];   // Split on a space, the original auth looks like  "Basic Y2hhcmxlczoxMjM0NQ==" and we need the 2nd part
+
+            var index, not_authorized = '<html><body>You are not authorized to access this page</body></html>';
+            if (!authorized(encoded)) {
+                self.header(auth_header);
+                self.end(401, not_authorized);
+            }
+        }
+        var exists = yield fsexists(path);
+        if (!exists) {
+            flog('missing file: ' + path, exists);
+            return self.end();
+        }
+        flog('file: ' + path);
+        var args = yield fsread(path, 'utf8'), err = args[0], data = args[1];
+
+        if (err) {
+            return self.end();
+        }
+        return self.end(fillTemplate(data, config));
+    }).listen(global.HTTP_PORT);
+    server.all("/build/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "build", params);
+    });
+    server.all("/backup/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "backup", params);
+    });
+    server.all("/npm/${command}/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "npm" + params.command, params);
+    });
+    server.all("/pull/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "pull", params);
+    });
+    server.all("/pull/${command}/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "pull" + params.command, params);
+    });
+    server.all("/restart/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "restart", params);
+    });
+    server.all("/start/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "start", params);
+    });
+    server.all("/stop/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "stop", params);
+    });
+    server.all("/sync/${name}/${passcode}", function* (req, res, params) {
+        return yield rest_action(this, "sync", params);
+    });
+    server.all("/admin/user/add/${passcode}/${username}/${password}", function* (req, res, params) {
+        return add_admin_user(params);
+    });
+    server.all("/admin/user/remove/${passcode}/${username}", function* (req, res, params) {
+        return rm_admin_user(params);
+    });
+    server.all("/admin/password/update/${passcode}/${username}/${old_password}/${password}", function* (req, res, params) {
+        return update_admin(params);
+    });
+    logit('http start on port: ' + global.HTTP_PORT);
+}
 
 
 // helper functions
 function pollProcess(name) {
     return syncroit(function*() {
         if (!deploying[name]) {
-            console.log(yield _exec("ps aux | grep " + name));
+            flog(yield _exec("ps aux | grep " + name));
         }
     });
 }
@@ -387,17 +544,6 @@ function start_app(obj) {
             });
         })(file);
     }
-}
-function writeNodeConfig() {
-    return fswrite(CONFIG_PATH + "nodeconfig.js",
-            "global.SOCKET_PORT = " + global.SOCKET_PORT +
-            ";\nglobal.HTTP_PORT = " + global.HTTP_PORT +
-            ";\nglobal.SAC = '" + global.SAC + "';" +
-            "\nglobal.HTTP_AUTH_USERNAME = '" + (global.HTTP_AUTH_USERNAME || "admin") + "';" +
-            "\nglobal.HTTP_AUTH_PASSWORD = '" + (global.HTTP_AUTH_PASSWORD || "admin") + "';" +
-            "\nglobal.EMAIL = '" + (global.EMAIL || "" ) + "';" +
-            "\nglobal.ENV = '" + (global.ENV || "prod") + "';" +
-            "\nglobal.FQDN = '" + (global.FQDN) + "';");
 }
 function getsshkey(name){
     return syncroit(function*(){

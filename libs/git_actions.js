@@ -1,11 +1,15 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v1.0.0                              /*/
+/*/ Craydent LLC deploy-v1.1.0                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
 /*/---------------------------------------------------------/*/
 /*/---------------------------------------------------------/*/
-var $c = require('craydent/noConflict');
+const pkg = require('../package.json'),
+	ns = !pkg.name.indexOf('@craydent/') ? "@craydent/" : "";
+
+const $c = require(ns + 'craydent/noConflict');
+
 function createDeployKey(data) {
 	if ($c.contains(data.git_address,'git@github.com') || $c.contains(data.git_address,'https://github.com')) {
 		return $c.ajax({

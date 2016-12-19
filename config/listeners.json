@@ -1,0 +1,10 @@
+{
+  "deploy":"deploy",
+  "addgit":"gitadd",
+  "addssh":"sshkey",
+  "adduser":"addadminuser",
+  "init":"init",
+  "getssh":"gitadd",
+  "removeuser":"removeadminuser",
+  "updateuser":"updateadminuser"
+}
