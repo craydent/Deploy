@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v1.1.0                              /*/
+/*/ Craydent LLC deploy-v1.2.0                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -78,6 +78,8 @@ const BASE_PATH = "/var/craydent/", CONFIG_PATH = BASE_PATH + "config/craydent-d
 	DEPLOY_SCRIPT = SCRIPT_PATH + "deploy_script.sh",
 	RESET_SCRIPT = SCRIPT_PATH + "reset_script.sh",
 	CREATE_DIR_SCRIPT = SCRIPT_PATH + "create_dirs.sh",
+	AUTO_START_SCRIPT = SCRIPT_PATH + "add_auto_start.sh " + SCRIPT_PATH,
+	AUTO_START_DISABLE_SCRIPT = SCRIPT_PATH + "rm_auto_start.sh",
 	DELETE_SCRIPT = SCRIPT_PATH + "delete_project.sh",
 	NODE_SCRIPT = SCRIPT_PATH + "node_script.sh",
 	RM_ROUTE_SCRIPT = SCRIPT_PATH + "rm_routes_script.sh",
@@ -111,7 +113,8 @@ const fsread = $c.yieldable(fs.readFile, fs);
 var utils = require('../libs/utils'),
 	encrypt_password = utils.encrypt_password,
 	correct_password = utils.correct_password,
-	writeNodeConfig = utils.writeNodeConfig;
+	writeNodeConfig = utils.writeNodeConfig,
+	writeAppConfig = utils.writeAppConfig;
 
 var apps = $c.include(APP_CONFIG, true) || [{
 		"name": "craydent-deploy",
@@ -122,7 +125,11 @@ var apps = $c.include(APP_CONFIG, true) || [{
 		"www": "",
 		"nodejs":"",
 		"webdir":"",
-		"email":""
+		"email":"",
+		"email2": "",
+		"email_interval": 3600000,
+		"autostart": false,
+		"health_check_interval": 30000
 	}];
 var nodeconfig = $c.include(CONFIG_PATH + 'nodeconfig');
 var CL = new $c.CLI({
@@ -142,6 +149,50 @@ CL
 		action(uninstall)
 	.command("rm",[{option: "-n,--name", type:"string", description:"[n]ame of the project to remove."}]).
 		action(removeApp)
+	.command("autostart",[{
+		option: "-e,--enable",
+		type:"boolean",
+		description:"flag to [e]nable autostart (true/false)."
+	},{
+		option: "-n,--name",
+		type:"string",
+		description:"[n]ame of the project to remove."
+	}]).
+		action(enable_disable_autostart)
+	.command("setinterval",[{
+		option: "-c,--interval",
+		type:"string",
+		description:"Health [c]heck interval."
+	},{
+		option: "-n,--name",
+		type:"string",
+		description:"[n]ame of the project to remove."
+	}]).
+		action(set_interval)
+	.command("setmailer",[{
+		option: "-z,--amazon",
+		type:"string",
+		description:"ama[z]on access credentials in form form accessKeyId:secretAccessKey."
+	},{
+		option: "-o,--smtp",
+		type:"string",
+		description:"mail server transp[o]rt uri string for logging."
+	},{
+		option: "-d,--sender",
+		type:"string",
+		description:"sen[d]er address when sending email."
+	},{
+		option: "-b,--mongo",
+		type:"string",
+		description:"mongod[b] connection string (URI) used for logging and error emails."
+	}]).
+		action(set_log_mailer)
+	.command("setmongo",[{
+		option: "-b,--mongo",
+		type:"string",
+		description:"mongod[b] connection string (URI) used for logging and error emails."
+	}]).
+		action(set_mongo)
 
 
 	.command("backup",[{option: "-n,--name", type:"string", description:"[n]ame of the project to backup."}]).
@@ -158,11 +209,27 @@ CL
 		action(appCommands)
 	.command("restart",[{option: "-n,--name", type:"string", description:"[n]ame of the project to restart."}]).
 		action(appCommands)
-	.command("start",[{option: "-n,--name", type:"string", description:"[n]ame of the project to start."}]).
-		action(appCommands)
-	.command("stop",[{option: "-n,--name", type:"string", description:"[n]ame of the project to stop."}]).
-		action(appCommands)
-	.command("sync:",[{option: "-n,--name", type:"string", description:"[n]ame of the project to sync web folders."}]).
+	.command("start",[{
+		option: "-n,--name",
+		type:"string",
+		description:"[n]ame of the project to start."
+	},{
+		option: "-e,--enable",
+		type:"boolean",
+		description:"flag to [e]nable autostart (true/false)."
+	}]).
+		action(stopStartAndDisableAuto)
+	.command("stop",[{
+		option: "-n,--name",
+		type:"string",
+		description:"[n]ame of the project to stop."
+	},{
+		option: "-e,--enable",
+		type:"boolean",
+		description:"flag to [e]nable autostart (true/false)."
+	}]).
+		action(stopStartAndDisableAuto)
+	.command("sync:",[{option: "-n,--name", type:"string", description:"[n]ame of the project to sync web folders." }]).
 		action(appCommands);
 
 CL
@@ -208,6 +275,12 @@ CL
 		type:"string",
 		command:"add",
 		description:"ssh [k]ey to add for various git commands."
+	})
+	.add({
+		option: "-c,--interval",
+		type:"string",
+		command:"add",
+		description:"Health [c]heck interval."
 	}).
 		action(addApp);
 
@@ -336,11 +409,36 @@ CL
 		option: "-t,--gitpassword",
 		type:"string",
 		description:"Gi[t] Password (with admin rights) to use when adding webhooks and/or deploy keys."
+	})
+	.add({
+		option: "-c,--interval",
+		type:"string",
+		description:"Health [c]heck interval."
+	})
+	.add({
+		option: "-b,--mongo",
+		type:"string",
+		description:"mongod[b] connection string (URI) used for logging."
+	})
+	.add({
+		option: "-z,--amazon",
+		type:"string",
+		description:"ama[z]on access credentials in form form accessKeyId:secretAccessKey."
+	})
+	.add({
+		option: "-o,--smtp",
+		type:"string",
+		description:"mail server transp[o]rt uri string for logging."
+	})
+	.add({
+		option: "-d,--sender",
+		type:"string",
+		description:"sen[d]er address when sending email."
 	}).
 		action(init);
 
 CL.add({
-	option: "--version,-v",
+	option: "-v,--version",
 	type:"string",
 	description:"indicates the current version of Craydent Deploy."
 }).
@@ -370,11 +468,7 @@ function* reset () {
 //if (CL.commandName == 'reset') {
 //	return $c.syncroit(function*() {
 	yield run(RESET_SCRIPT + " \"craydent-deploy\" \"index.js\" " + __dirname.replace('bin','') + ";");
-	var status = false;
-	try {
-		status = (yield fsstat(CPROXY_PATH))[1];
-		status && (yield run(RM_ROUTE_SCRIPT + " \"" + FQDN.replace(/https?:\/\/(.*?)(\/|\?|#|:|$).*/,'$1') + "\";"));
-	} catch (e) { }
+	yield* _reset();
 	console.log('Complete');
 	process.exit();
 	//});
@@ -384,30 +478,27 @@ function* uninstall () {
 //	return $c.syncroit(function*() {
 	yield run(DEPLOY_SCRIPT + " \"craydent-deploy\" \"stop\" \"\" \"\" \"\" \"index.js\"");
 	yield run(RESET_SCRIPT + " \"craydent-deploy\" \"index.js\" " + __dirname.replace('bin','') + ";");
-	var status = false;
-	try {
-		status = (yield fsstat(CPROXY_PATH))[1];
-		status && FQDN && (yield run(RM_ROUTE_SCRIPT + " '" + FQDN.replace(/https?:\/\/(.*?)(\/|\?|#|:|$).*/,'$1') + "';"));
-	} catch (e) { }
+	yield* enable_disable_autostart("uninstall");
+	yield* _reset();
 	yield run("npm uninstall -g " + require('../package.json').name + ";");
 	console.log('Complete');
 	process.exit();
 	//});
 }
 function* init () {
-	if (CL.version === true) { return; }
+	if (CL.version === true || CL.v === true) { return; }
 	if (nodeconfig && CL.CommandName == "*") {
 		yield run(NODE_SCRIPT + " \"craydent-deploy\" \"index.js\";");
 		console.log('Completed');
-		process.exit();
+		return process.exit();
 	}
 	var ssh_file;
 
 	//--------environment related
-	var fqdn = global.FQDN = CL.fqdn || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
-	var env = global.ENV = CL.environment || (yield question('What tier/environment is this server? (PROD): ')) || "PROD";
+	var env = global.ENV = CL.environment || (yield question('What tier/environment is this server? (STG): ')) || "STG";
 	var sport = global.SOCKET_PORT = CL.socketport || (yield question('What socket port do you want to use? (4900): ')) || 4900;
-	var hport = global.HTTP_PORT = CL.httpport || (yield question('What server port do you want to use? (4800): ')) || 4800;
+	var hport = global.HTTP_PORT = CL.httpport || (yield question('What http port do you want to use? (4800): ')) || 4800;
+	var fqdn = global.FQDN = CL.fqdn || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:' + hport + '): '));
 	var arrAuthu = (CL.httpuser ? CL.httpuser : (yield question('What HTTP Auth username do you want to use? (admin): ')) || 'admin').split(',');
 	var arrAuthp = (CL.httppassword ? CL.httppassword : (yield question('What HTTP Auth password do you want to use? (admin): ')) || 'admin').split(',');
 	global.HTTP_AUTH = {};
@@ -480,7 +571,8 @@ function* init () {
 				CL.gituser,
 				CL.gitpassword,
 				null,
-				global.EMAIL));
+				CL.email || "",
+				CL.interval));
 
 			skip = (yield question('Add another project? (no): ')) || "no";
 		}
@@ -493,8 +585,21 @@ function* init () {
 	yield run("mkdir -p " + CONFIG_PATH + ";");
 	yield run("cp -r " + __dirname.replace('bin','') + "* " + PROJECT_PATH);
 	yield run('chown -R ' + username + ' ' + BASE_PATH + ';');
-	yield writeNodeConfig(sport,hport,scuid,email,env,fqdn);
-	yield fswrite(APP_CONFIG, JSON.stringify(apps, null, 2));
+
+	yield writeNodeConfig({ sport:sport, hport:hport, scuid:scuid, email:email, env:env, fqdn:fqdn, interval:CL.interval });
+	yield writeAppConfig(apps);
+
+	//--------add deploy service to boot
+	yield* enable_disable_autostart(null, true);
+	//--------end add deploy service to boot
+
+	//--------add emailing to deploy service
+	yield* set_log_mailer(null, true);
+	//--------end add emailing to deploy service
+
+	//--------add mongo based logs to deploy service
+	yield* set_mongo(null, true);
+	//--------add mongo based logs to deploy service
 
 	if (buildnames.length) {
 		yield deploy_script(buildnames,sport,hport,authu,authp);
@@ -518,9 +623,11 @@ function* addApp () {
 		CL.gituser,
 		CL.gitpassword,
 		CL.sshkey,
-		global.EMAIL);
+		CL.email || "",
+		CL.interval
+	);
 
-	yield fswrite(APP_CONFIG, JSON.stringify(apps, null, 2));
+	yield writeAppConfig(apps);
 	var appobj = $c.where(apps,{name:bname})[0];
 	if (appobj) {
 		var npath = BASE_PATH + "nodejs/" + bname;
@@ -533,7 +640,7 @@ function* addApp () {
 			" " + (appobj.nodejs || "''") +
 			" " + (appobj.webdir || "''") +
 			" '" + appobj.servers.join(" ") + "'" +
-			" '" + (global.ENV || "prod") + "'" + ";");
+			" '" + (global.ENV || "stg") + "'" + ";");
 
 		var pconfig = $c.include(CPROXY_PATH,true);
 		if (pconfig) {
@@ -571,12 +678,12 @@ function* removeApp (action) {
 			" " + (appobj.nodejs || "''") +
 			" " + (appobj.webdir || "''") +
 			" '" + appobj.servers.join(" ") + "'" +
-			" '" + (global.ENV || "prod") + "'" + ";");
+			" '" + (global.ENV || "stg") + "'" + ";");
 		yield run(DEPLOY_SCRIPT + " \"" + appobj.name + "\" \"stop\" " + " " + (appobj.www || "''") +
 			" " + (appobj.nodejs || "''") +
 			" " + (appobj.webdir || "''") +
 			" '" + appobj.servers.join(" ") + "'" +
-			" '" + (global.ENV || "prod") + "'" + ";");
+			" '" + (global.ENV || "stg") + "'" + ";");
 		var pkg = $c.include(GIT_PATH + appobj.name + '/package.json');
 		if (pkg) {
 			console.log('removing proxy routes');
@@ -587,7 +694,7 @@ function* removeApp (action) {
 		arr.push(run(DELETE_SCRIPT + " \"" + appobj.name + "\""));
 
 	}
-	yield fswrite(APP_CONFIG, JSON.stringify(apps, null, 2));
+	yield writeAppConfig(apps);
 	yield $c.parallelEach(arr);
 	console.log('Completed');
 	process.exit();
@@ -629,6 +736,10 @@ function* updateUser () {
 	console.log('Completed');
 	process.exit();
 }
+function* stopStartAndDisableAuto (action) {
+	if (CL.enable) { yield* enable_disable_autostart(action); }
+	yield* appCommands(action);
+}
 function* appCommands (action) {
 	if(!nodeconfig) { return console.log('Craydent Deploy must be initialized before you can run ' + action + ' on an app.'),process.exit(); }
 
@@ -639,12 +750,129 @@ function* appCommands (action) {
 			" " + (appobj.nodejs || "''") +
 			" " + (appobj.webdir || "''") +
 			" '" + appobj.servers.join(" ") + "'" +
-			" '" + (global.ENV || "prod") + "'" + ";"));
+			" '" + (global.ENV || "stg") + "'" + ";"));
 	}
 	yield $c.parallelEach(arr);
 
 	console.log('Completed');
 	process.exit();
+}
+function* enable_disable_autostart (command, fromInit) {
+	if (fromInit && $c.isNull(CL.enable) && $c.isNull(CL.disable)) {
+		var answer = (yield question('Would you like to enable auto start? (yes) ')) || 'yes';
+		if (answer in yes) {
+			CL.enable = true;
+		}
+	} else if (CL.disable || CL.enable == "false") {
+		CL.enable = false;
+	} else { CL.enable = true; }
+
+	if (CL.name && !fromInit) {
+		if(!nodeconfig) { return console.log('Craydent Deploy must be initialized before you can enable auto start.'),process.exit(); }
+		var appobj = $c.where(apps,{name:CL.name})[0];
+		if(!appobj) { return console.log('Unknown app ' + CL.name + '.'), process.exit(); }
+		appobj.autostart = CL.enable;
+		yield writeAppConfig(apps);
+	} else if (CL.enable) {
+		yield run(AUTO_START_SCRIPT);
+	} else {
+		yield run(AUTO_START_DISABLE_SCRIPT);
+	}
+
+	if (!command && !fromInit) {
+		console.log('Complete');
+		return process.exit();
+	}
+}
+function* set_log_escalation (command, fromInit) {
+	if(!fromInit && !nodeconfig) { return console.log('Craydent Deploy must be initialized before you can enable log mailer escalation.'), process.exit(); }
+	if (fromInit && ($c.isNull(CL.smtp) || $c.isNull(CL.amazon) || $c.isNull(CL.sender))) {
+		var answer = (yield question('Would you like to have errors emailed to you? (no) ')) || 'no';
+		if (answer in no) { return; }
+	}
+	if (!fromInit) { yield* set_mongo(command); }
+	var isAws,key,secret,smtp;
+	if (!CL.smtp) {
+		isAws =  CL.amazon && "yes" || (yield question('Is this going to need to use Amazon SES? (no) ')) || "no";
+	}
+	if (isAws in yes) {
+		var creds = (CL.amazon || (yield question('What are the AWS SES access credentials.? (format is "accessKeyId:secretAccessKey") '))).split(':');
+		key = creds[0];
+		secret = creds[1];
+	} else {
+		smtp = CL.smtp || (yield question('What is the smtp URI? '));
+	}
+	var sender = CL.sender || (yield question('What email should be used as the sender? '));
+
+	yield writeNodeConfig({ smtp: smtp, sender: sender, awskey: key, awssecret: secret });
+	if (!fromInit) {
+		console.log('Complete');
+		return process.exit();
+	}
+}
+function* set_interval () {
+	if(!nodeconfig) { return console.log('Craydent Deploy must be initialized before you can enable health check intervals.'), process.exit(); }
+	while (!CL.interval && (CL.interval = parseInt(yield question('What interval (in ms) do you want deploy to check the app?: ')))) { }
+
+	if (CL.name) {
+		var appobj = $c.where(apps,{name:CL.name})[0];
+		if(!appobj) { return console.log('Unknown app ' + CL.name + '.'), process.exit(); }
+		appobj.health_check_interval = CL.interval;
+		yield writeAppConfig(apps);
+	} else {
+		yield writeNodeConfig({ interval: CL.interval })
+	}
+
+	console.log('Complete');
+	return process.exit();
+}
+function* set_log_mailer (command, fromInit) {
+	if(!fromInit && !nodeconfig) { return console.log('Craydent Deploy must be initialized before you can enable log mailer.'), process.exit(); }
+	if (fromInit && ($c.isNull(CL.smtp) || $c.isNull(CL.amazon) || $c.isNull(CL.sender))) {
+		var answer = (yield question('Would you like to have errors emailed to you? (no) ')) || 'no';
+		if (answer in no) { return; }
+	}
+	if (!fromInit) { yield* set_mongo(command); }
+	var isAws,key,secret,smtp;
+	if (!CL.smtp) {
+		isAws =  CL.amazon && "yes" || (yield question('Is this going to need to use Amazon SES? (no) ')) || "no";
+	}
+	if (isAws in yes) {
+		var creds = (CL.amazon || (yield question('What are the AWS SES access credentials.? (format is "accessKeyId:secretAccessKey") '))).split(':');
+		key = creds[0];
+		secret = creds[1];
+	} else {
+		smtp = CL.smtp || (yield question('What is the smtp URI? '));
+	}
+	var sender = CL.sender || (yield question('What email should be used as the sender? '));
+
+	yield writeNodeConfig({ smtp: smtp, sender: sender, awskey: key, awssecret: secret });
+	if (!fromInit) {
+		console.log('Complete');
+		return process.exit();
+	}
+}
+function* set_mongo (command, fromInit) {
+	if(!fromInit && !nodeconfig) { return console.log('Craydent Deploy must be initialized before you can enable mongo logging.'), process.exit(); }
+	if (fromInit && $c.isNull(CL.mongo)) {
+		var answer = (yield question('Would you like to enable db logging for faster log searches? (no) ')) || 'no';
+		if (answer in no) { return; }
+	}
+	var mongo = CL.mongo || (yield question('What is the MongoDB URI? '));
+
+	yield writeNodeConfig({ mongouri: mongo });
+
+	if (!fromInit) {
+		console.log('Complete');
+		return process.exit();
+	}
+}
+function* _reset() {
+	var status = false;
+	try {
+		status = (yield fsstat(CPROXY_PATH))[1];
+		status && FQDN && (yield run(RM_ROUTE_SCRIPT + " \"" + FQDN.replace(/https?:\/\/(.*?)(\/|\?|#|:|$).*/,'$1') + "\";"));
+	} catch (e) { }
 }
 function _prepare (action) {
 	return $c.syncroit(function*(){
@@ -696,7 +924,7 @@ function deploy_script (buildnames, sport, hport, authu, authp) {
 		yield run("nohup node " + NODE_PATH + "index.js " + sport + " " + hport + " '" + scuid + "' '" + authu + "' '" + authp + "' > " + LOG_PATH + "index.js.log 2>&1 &");
 	});
 }
-function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key, gitUser, gitPassword, key_name, email) {
+function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key, gitUser, gitPassword, key_name, email, interval) {
 	var username =  String(require('child_process').execSync( "whoami", { encoding: 'utf8', timeout: 1000 } )).trim();
 	key_name = key_name || MASTER_KEY;
 	return $c.syncroit(function*() {
@@ -704,11 +932,21 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 		gitUrl = gitUrl || (yield question('What is the GitHub or BitBucket SSH url: '));
 		var buildname = gitUrl.replace(/.*\/(.*)\.git/, '$1');
 		buildname = name || (yield question('What do you want to call your project (' + buildname + '): ')) || buildname;
+		//var createDeployKey = create_deploy_key || (yield question('Do you want to add your ssh master key in Git? (yes): ')) || "yes";
+		var createDeployKey = create_deploy_key || (yield question('Does this ssh master key exist in the Git project? (no): ')) || "no";
 		var setupWebHooks = create_webhooks || (yield question('Set up Webhooks for continuous integration? (yes): ')) || "yes";
-		var createDeployKey = create_deploy_key || (yield question('Do you want to add your ssh master key in Git? (yes): ')) || "yes";
 		var url = "";
-		if (setupWebHooks in yes || createDeployKey in yes) {
+		if (setupWebHooks in yes/* || createDeployKey in yes*/) {
 			url = deploy_url || (yield question('What URL will be running this instance of cdeploy? (ex: http://www.example.com:80): '));
+		}
+		interval = parseInt(interval);
+		var monitor = interval && "yes" || (yield question('Do you want to automatically restart this app? (yes): ')) || "yes";
+		if (monitor in yes) {
+			if (!interval) {
+				interval = parseInt(yield question('What interval (in ms) do you want deploy to check the app? (30000): ')) || 30000;
+			}
+		} else {
+			interval = 0;
 		}
 		var protocol = "http";
 
@@ -739,7 +977,7 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 			});
 		}
 
-		if (createDeployKey in yes) {
+		if (createDeployKey in no) {
 			var cdk = function (){
 				return $c.syncroit(function*() {
 					var content = yield fsread(KEY_PATH + MASTER_KEY + ".pub", {encoding: 'utf8'});
@@ -801,13 +1039,17 @@ function git_script(gitUrl, name, deploy_url, create_webhooks, create_deploy_key
 		apps.push({
 			"name": buildname,
 			"servers": [server],
-			"logfile": [LOG_BASE_PATH + server + ".log"],
+			"logfile": [LOG_BASE_PATH + buildname + "/" + server + ".log"],
 			"size": {},
 			"fd": {},
 			"www": "",
 			"nodejs": "",
 			"webdir": "",
-			"email": email
+			"email": email,
+			"email2": "",
+			"email_interval": 3600000,
+			"autostart": monitor in yes,
+			"health_check_interval": interval
 		});
 		return buildname;
 	});

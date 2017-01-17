@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v1.1.0                              /*/
+#/*/ Craydent LLC deploy-v1.2.0                              /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -28,3 +28,5 @@ sudo mkdir -p $rootdir/craydent/backup/;
 sudo mkdir -p $rootdir/craydent/key/;
 #sudo mkdir -p $rootdir/scripts/;
 sudo chmod -R 775 /var/craydent/;
+
+exit 0

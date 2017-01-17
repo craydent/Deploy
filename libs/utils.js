@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v1.1.0                              /*/
+/*/ Craydent LLC deploy-v1.2.0                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -9,6 +9,10 @@ const pkg = require('../package.json'),
 	ns = !pkg.name.indexOf('@craydent/') ? "@craydent/" : "";
 
 const $c = require(ns + 'craydent/noConflict');
+const fs = require('fs'), fswrite = $c.yieldable(fs.writeFile,fs);
+const CONFIG_PATH = "/var/craydent/config/craydent-deploy/",
+	APP_CONFIG = CONFIG_PATH + "craydent_deploy_config.json",
+	NODE_CONFIG = "nodeconfig.js";
 
 function encrypt_password(str) {
 	var hex = "0123456789abcdef", salt = "";
@@ -35,22 +39,33 @@ function authorized (b64, section) {
 	}
 	return true;
 }
-function writeNodeConfig(sport,hport,scuid,email,env,fqdn, path) {
-	path = arguments.length == 1 ? arguments[0] : path || "/var/craydent/config/craydent-deploy/";
-	var fs = require('fs'), fswrite = $c.yieldable(fs.writeFile,fs);
-	return fswrite(path + "nodeconfig.js",
-		"global.SOCKET_PORT = " + (sport || global.SOCKET_PORT) +
-		";\nglobal.HTTP_PORT = " + (hport || global.HTTP_PORT) +
-		";\nglobal.SAC = '" + (scuid || global.SAC) + "';" +
+function writeNodeConfig(config) {
+	config = config || {};
+	var path = $c.isString(config) ? config : (config.path || CONFIG_PATH);
+	return fswrite(path + NODE_CONFIG,
+		"global.SOCKET_PORT = " + (config.sport || global.SOCKET_PORT) +
+		";\nglobal.HTTP_PORT = " + (config.hport || global.HTTP_PORT) +
+		";\nglobal.SAC = '" + (config.scuid || global.SAC) + "';" +
 		"\nglobal.HTTP_AUTH = " + JSON.stringify(global.HTTP_AUTH) + ";" +
-		"\nglobal.EMAIL = '" + (email || global.EMAIL || "" ) + "';" +
-		"\nglobal.ENV = '" + (env || global.ENV || "prod") + "';" +
-		"\nglobal.FQDN = '" + (fqdn || global.FQDN) + "';");
+		"\nglobal.EMAIL = '" + (config.email || global.EMAIL || "" ) + "';" +
+		"\nglobal.EMAIL2 = '" + (config.email2 || global.EMAIL2 || "" ) + "';" +
+		"\nglobal.ENV = '" + (config.env || global.ENV || "prod") + "';" +
+		"\nglobal.FQDN = '" + (config.fqdn || global.FQDN) + "';" +
+		"\nglobal.INTERVAL = " + (config.interval || global.INTERVAL || 30000) + ";" +
+		"\nglobal.EMAIL_INTERVAL = " + (config.einterval || global.EMAIL_INTERVAL || 3600000) + ";" +
+		"\nglobal.SENDER = '" + (config.sender || global.SENDER || "") + "';" +
+		"\nglobal.SMTP = '" + (config.smtp || global.SMTP || "") + "';" +
+		"\nglobal.AWSACCESSKEY = '" + (config.awskey || global.AWSACCESSKEY || "") + "';" +
+		"\nglobal.AWSSECRETKEY = '" + (config.awssecret || global.AWSSECRETKEY || "") + "';" +
+		"\nglobal.MONGO_URI = '" + (config.mongouri || global.MONGO_URI || "") + "';");
 }
-
+function writeAppConfig(apps) {
+	return fswrite(APP_CONFIG, JSON.stringify(apps, null, 2));
+}
 module.exports = {
 	encrypt_password: encrypt_password,
 	correct_password: correct_password,
 	authorized: authorized,
-	writeNodeConfig: writeNodeConfig
+	writeNodeConfig: writeNodeConfig,
+	writeAppConfig: writeAppConfig
 };

@@ -1,6 +1,6 @@
 <img src="http://craydent.com/JsonObjectEditor/img/svgs/craydent-logo.svg" width=75 height=75/>
 
-# Craydent Deploy 1.1.0
+# Craydent Deploy 1.2.0
 **by Clark Inada**
 
 This standalone module is a deployment, continuous integration (CI), and log viewing platform for NodeJS written in node.  This craydent-deploy can be used in conjunction with [craydent-proxy](https://www.npmjs.com/package/craydent-proxy) and routes can be automatically added when the package.json of the app to be deployed has a configuration properly set.  Craydent-deploy can add git projects and set up CI and allows you to view real-time logs on the server for the added projects.
@@ -39,29 +39,33 @@ cdeploy version takes no arguments.  This will output the current verion of Cray
 #### Initialize
 Usage with arguments (these are defaults or variables) to initialize
 ```shell
-$ sudo cdeploy 'prod' 4900 4800 admin admin /var/craydent/key/master_id_rsa.pub '' '{{git@github.com:craydent/Craydent-Deploy.git or skip}}' '{{Craydent-Deploy}}' 'yes' 'yes' '{{http://www.example.com}}' '{{gituser}}' '{{gitpassword}}'
+$ sudo cdeploy 'prod' 4900 4800 admin admin /var/craydent/key/master_id_rsa.pub '' '{{git@github.com:craydent/Craydent-Deploy.git or skip}}' '{{Craydent-Deploy}}' 'yes' 'yes' '{{http://www.example.com}}' '{{gituser}}' '{{gitpassword}}' '{{mongoURI}}' '{{amzaccessid:amzaccesssecret}}' '{{smtp}}' '{{senderemail}}'
 
-$ sudo cdeploy -e 'prod' -s 4900 -h 4800 -u admin -p admin -k /var/craydent/key/master_id_rsa.pub -m '' -a '{{git@github.com:craydent/Craydent-Deploy.git or skip}}' -n '{{Craydent-Deploy}}' -w 'yes' -r 'yes' -f '{{http://www.example.com}}' -g '{{gituser}}' -i '{{gitpassword}}'
+$ sudo cdeploy -e 'prod' -s 4900 -h 4800 -u admin -p admin -k /var/craydent/key/master_id_rsa.pub -m '' -a '{{git@github.com:craydent/Craydent-Deploy.git or skip}}' -n '{{Craydent-Deploy}}' -w 'yes' -r 'yes' -f '{{http://www.example.com}}' -g '{{gituser}}' -i '{{gitpassword}}' -b '{{mongoURI}}' -z '{{amzaccessid:amzaccesssecret}}' -o '{{smtp}}' -d '{{senderemail}}'
 
-$ sudo cdeploy --environment 'prod' --socketport 4900 --hostport 4800 --httpuser admin --httppassword admin --sshkey /var/craydent/key/master_id_rsa.pub --email '' --gitaddress '{{git@github.com:craydent/Craydent-Deploy.git or skip}}' --name '{{Craydent-Deploy}}' --use-webhook 'yes' --sshkey-exists 'yes' --fqdn '{{http://www.example.com}}' --gituser '{{gituser}}' --gitpassword '{{gitpassword}}'
+$ sudo cdeploy --environment 'prod' --socketport 4900 --hostport 4800 --httpuser admin --httppassword admin --sshkey /var/craydent/key/master_id_rsa.pub --email '' --gitaddress '{{git@github.com:craydent/Craydent-Deploy.git or skip}}' --name '{{Craydent-Deploy}}' --use-webhook 'yes' --sshkey-exists 'yes' --fqdn '{{http://www.example.com}}' --gituser '{{gituser}}' --gitpassword '{{gitpassword}}' --mongo '{{mongoURI}}' --amazon '{{amzaccessid:amzaccesssecret}}' --smtp '{{smtp}}' --sender '{{senderemail}}'
 ```
 
-cdeploy initialization can take 14 arguments.  When arguments are missing, the CLI will ask a series of questions to obtain the missing arguments.
+cdeploy initialization can take 18 arguments.  When arguments are missing, the CLI will ask a series of questions to obtain the missing arguments.
 
-1. env tier - dev, stg, prod (or custom name).
-2. socket port - port the websocket server will listen on.
-3. http port - port the webserver server will listen on.
-4. http auth username - username to login with to access the deploy UI (HTTP AUTH).
-5. http auth password - password to login with to access the deploy UI (HTTP AUTH).
-6. ssh key - path to ssh key or 'create' to create a new key.
-7. email - email to send notifications
-8. git url - first project to add from a git repo or 'skip' to skip this step
-9. project name - name of the git project
-10. yes/no to add webhooks - flag to enable webhook for continuous integration
-11. yes/no if the ssh key is already registered in git - if yes, continuous integration will use the key.  if no the key will be added to the git repo
-12. the domain pointing to this server - the fully qualified domain name or IP for this server
-13. git username - username for the git user able to add webhooks and keys. (this is not stored and used one time)
-14. git password - password for the git user able to add webhooks and keys. (this is not stored and used one time)
+1. env tier - dev, stg, prod or custom name (-e,--environment).
+2. socket port - port the websocket server will listen on (-s,--socketport).
+3. http port - port the webserver server will listen on (-h,--hostport).
+4. http auth username - username to login with to access the deploy UI (HTTP AUTH) (-u,--httpuser).
+5. http auth password - password to login with to access the deploy UI (HTTP AUTH) (-p,--httppassword).
+6. ssh key - path to ssh key or 'create' to create a new key (-k,--sshkey).
+7. email - email to send notifications (-m,--email).
+8. git url - first project to add from a git repo or 'skip' to skip this step (-a,--gitaddress).
+9. project name - name of the git project (-n,--name).
+10. yes/no to add webhooks - flag to enable webhook for continuous integration (-w,--use-webhook).
+11. yes/no if the ssh key is already registered in git - if yes, continuous integration will use the key.  if no the key will be added to the git repo (-r,--sshkey-exists).
+12. the domain pointing to this server - the fully qualified domain name or IP for this server (-f,--fqdn).
+13. git username - username for the git user able to add webhooks and keys. (this is not stored and used one time) (-g,--gituser).
+14. git password - password for the git user able to add webhooks and keys. (this is not stored and used one time) (-i,--gitpassword).
+15. mongo - MongoDB connection string to be used for logging (-b,--mongo).
+16. aws credentials - Credentials for AWS SES which must be in the format "accessKeyId:secretAccessKey" (-z,--amazon).
+17. smtp - SMTP server url to be used to send emails  (-o,--smtp).
+18. sender - Email of the the sender when sending emails via Craydent Deploy (-d,--sender).
 
 #### Reset
 
@@ -90,13 +94,13 @@ $ sudo cdeploy add --gitaddress '{{git@github.com:craydent/Craydent-Deploy.git}}
 ```
 cdeploy add can take 8 arguments.  When arguments are missing, the CLI will ask a series of questions to obtain the missing arguments.
 
-1. git url - first project to add from a git repo
-2. project name - name of the git project
-3. yes/no to add webhooks - flag to enable webhook for continuous integration
-4. yes/no if the ssh key is already registered in git - if yes, continuous integration will use the key.  if no the key will be added to the git repo
-5. git username - username for the git user able to add webhooks and keys. (this is not stored and used one time)
-6. git password - password for the git user able to add webhooks and keys. (this is not stored and used one time)
-7. ssh key name to add as a deploy key. (default: is master_id_rsa created when Craydent Deploy was initialized)
+1. git url - first project to add from a git repo (-a,--gitaddress).
+2. project name - name of the git project (-n,--name).
+3. yes/no to add webhooks - flag to enable webhook for continuous integration (-w,--use-webhook).
+4. yes/no if the ssh key is already registered in git - if yes, continuous integration will use the key.  if no the key will be added to the git repo (-r,--use-sshkey).
+5. git username - username for the git user able to add webhooks and keys. (this is not stored and used one time) (-g,--gituser).
+6. git password - password for the git user able to add webhooks and keys. (this is not stored and used one time) (-i,--gitpassword).
+7. ssh key name to add as a deploy key. (default: is master_id_rsa created when Craydent Deploy was initialized) (-k,--sshkey).
 
 #### Project Actions
 
@@ -192,7 +196,7 @@ $ sudo cdeploy sync -n '{{Project Name}}'
 
 $ sudo cdeploy sync --name '{{Project Name}}'
 ```
-cdeploy {{action}} requires 1 argument (project name).  When argument is missing, the CLI will ask a for the project name.
+cdeploy {{action}} requires 1 argument (project name).  When argument is missing, the CLI will ask a for the project name (-n,--name).
 
 REST equivalents
 
@@ -227,6 +231,84 @@ REST equivalents
 /sync/{{Project Name}}/{{passcode} }
 ```
  
+#### Enable auto start
+
+```shell
+$ sudo cdeploy autostart true {{Craydent-Deploy}}'
+
+$ sudo cdeploy autostart -e -n {{Craydent-Deploy}}'
+
+$ sudo cdeploy autostart --enable --name '{{Craydent-Deploy}}'
+```
+
+cdeploy autostart can take 2 arguments.  When argument is missing, the CLI will ask questions to obtain the fields.
+
+1. enable - flag to enable or disable auto start. (-e,--enable)
+2. name - project name (-n,--name).
+ 
+#### Disable auto start
+
+```shell
+$ sudo cdeploy autostart false {{Craydent-Deploy}}'
+
+$ sudo cdeploy autostart -e false -n {{Craydent-Deploy}}'
+
+$ sudo cdeploy autostart --enable false --name '{{Craydent-Deploy}}'
+
+$ sudo cdeploy autostart --disable --name '{{Craydent-Deploy}}'
+```
+
+cdeploy autostart can take 2 arguments.  When argument is missing, the CLI will ask questions to obtain the fields.
+
+1. enable - flag to enable or disable auto start. (-e,--disable)
+2. name - project name (-n,--name).
+
+#### Set health check interval
+
+```shell
+$ sudo cdeploy setinterval 30000 {{Craydent-Deploy}}'
+
+$ sudo cdeploy setinterval -c 30000 -n {{Craydent-Deploy}}'
+
+$ sudo cdeploy setinterval --interval 30000 --name '{{Craydent-Deploy}}'
+```
+
+cdeploy setinterval can take 2 arguments.  When argument is missing, the CLI will ask questions to obtain the fields.
+
+1. interval - Health check interval (default: 30000) (-c,--interval).
+2. name - project name (-n,--name).
+ 
+#### Set up mongodb for logging and error emails
+
+```shell
+$ sudo cdeploy setmongo '{{mongoURI}}'
+
+$ sudo cdeploy setmongo -b '{{mongoURI}}'
+
+$ sudo cdeploy setmongo --mongo '{{mongoURI}}'
+```
+
+cdeploy adduser requires 1 argument (MongoDB URI).  When argument is missing, the CLI will ask a for the MongoDB URI.
+
+1. mongo - MongoDB connection string to be used for logging (-b,--mongo).
+
+#### Set up email on errors
+
+```shell
+$ sudo cdeploy setmailer '{{amazoncredentials}}' '{{smtp uri}}' '{{sender email}}' '{{mongoURI}}'
+
+$ sudo cdeploy setmailer -z '{{amazoncredentials}}' -o '{{smtp uri}}' -d '{{sender email}}' -b '{{mongoURI}}'
+
+$ sudo cdeploy setmailer --amazon '{{amazoncredentials}}' --smtp '{{smtp uri}}' --sender '{{sender email}}' --mongo '{{mongoURI}}'
+```
+
+cdeploy setmailer can take up to 4 arguments.  When argument is missing, the CLI will ask questions to obtain the fields.
+
+1. amazon credentials - amazon access credentials in form form accessKeyId:secretAccessKey. (-z,--amazon)
+2. smtp uri - mail server transport uri string for logging.. (-o,--smtp)
+3. sender email - email address to use in the "from" when sending emails. (-d,--sender)
+4. mongo - MongoDB connection string to be used for logging (-b,--mongo).
+
 #### Add HTTP User
 
 ```shell

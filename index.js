@@ -1,5 +1,5 @@
 /*/---------------------------------------------------------/*/
-/*/ Craydent LLC deploy-v1.1.0                              /*/
+/*/ Craydent LLC deploy-v1.2.0                              /*/
 /*/ Copyright 2011 (http://craydent.com/about)              /*/
 /*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 /*/ (http://craydent.com/license)                           /*/
@@ -70,33 +70,35 @@ const CONFIG_PATH = BASE_PATH + "config/craydent-deploy/";
 const LOG_BASE_PATH = BASE_PATH + "log/";
 const LOG_PATH = LOG_BASE_PATH + "/craydent-deploy/";
 const KEY_PATH = BASE_PATH + "key/";
-const LISTENERS = include('./config/listeners.json',true);
+const LISTENERS = include('./config/listeners.json');
 
 
 const CPROXY_PATH = CONFIG_BASE_PATH + 'craydent-proxy/pconfig.json';
-var pconfig = include(CPROXY_PATH, true);
+var pconfig = include(CPROXY_PATH);
 
 var fs = require('fs');
 var git = require('./libs/git_actions');
 var utils = require('./libs/utils'),
     writeNodeConfig = utils.writeNodeConfig,
+    writeAppConfig = utils.writeAppConfig,
     encrypt_password = utils.encrypt_password,
     correct_password = utils.correct_password,
     authorized = utils.authorized;
 
-var actions = include('./config/actions.json',true),
+var actions = include('./config/actions.json'),
     deploying = {},
-    apps = include(CONFIG_PATH + 'craydent_deploy_config.json',true),
-    nconfig = include(CONFIG_PATH + 'nodeconfig.js',true),
+    log_tracker = {},
+    apps = include(CONFIG_PATH + 'craydent_deploy_config.json'),
+    nconfig = include(CONFIG_PATH + 'nodeconfig.js'),
     shelldir = __dirname + '/shell_scripts/',
     fswrite = yieldable(fs.writeFile,fs),
     fsreaddir = yieldable(fs.readdir,fs),
     fsread = yieldable(fs.readFile,fs),
     fsexists = yieldable(fs.exists,fs),
-    fsopen = yieldable(fs.open,fs),
-    fsstat = yieldable(fs.stat,fs),
+    //fsopen = yieldable(fs.open,fs),
+    //fsstat = yieldable(fs.stat,fs),
     config = {apps:apps,keys:["master_id_rsa"],deploying:deploying},
-    io;
+    io, apptimeouts = {};
 var cb = function(event_type, filename){
     try {
         if (event_type == "change") {
@@ -104,6 +106,7 @@ var cb = function(event_type, filename){
             filename == 'nodeconfig.js' ?
                 (nconfig = include(CONFIG_PATH + 'nodeconfig.js',true)) :
                 (apps = include(CONFIG_PATH + 'craydent_deploy_config.json',true)) ;
+            check_apps();
         } else if (event_type == "rename") {
             if (filename == 'nodeconfig.js') {
                 try {
@@ -139,9 +142,13 @@ syncroit(function *(){
             "www": "",
             "nodejs":"node",
             "webdir":"",
-            "email":""
+            "email":"",
+            "email2": "",
+            "autostart": false,
+            "email_interval": 3600000,
+            "health_check_interval": 30000
         }];
-        yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(config.apps, null, 2));
+        yield writeAppConfig(config.apps);
     }
     config.apps = apps;
 
@@ -217,9 +224,13 @@ syncroit(function *(){
                         www: data.www || "",
                         nodejs: data.nodejs || "",
                         webdir: data.webdir || "",
-                        email: data.email
+                        "email":"",
+                        "email2": "",
+                        "autostart": false,
+                        "email_interval": 3600000,
+                        "health_check_interval": 30000
                     });
-                    yield fswrite(CONFIG_PATH + "craydent_deploy_config.json", JSON.stringify(config.apps, null, 2));
+                    yield writeAppConfig(config.apps);
 
                     var dt = yield getsshkey(data.name);
 
@@ -316,18 +327,157 @@ syncroit(function *(){
         });
     });
     init_webserver();
+    yield check_apps();
 });
-function flog(){
+function send_email (details) {
+    return syncroit(function* () {
+        if ($c.isString(details)) { details = log_tracker[details]; }
+        else if (details.email2 || global.EMAIL2) {
+            details.cuid = cuid();
+            log_tracker[details.cuid] = details;
+            details.iteration = 0;
+            details.reviewed = false;
+        }
+        details.iteration++;
+
+        var rname = details.name,
+            rserver = details.server,
+            remail = details.email || global.EMAIL,
+            remail2 = details.email2 || global.EMAIL2;
+
+        var link = remail2 && "\n\nAcknowledge link: blah.com****" || "";
+
+        var body = rname + ":" + rserver + " has stopped running and is being restarted" + link + "\n\nLogs:\n\n\n" +
+            (yield fsread(details.log))[1];
+        flog(rname + ":" + rserver + " sending email to " + remail + ".");
+
+        var nodemailer = require('nodemailer');
+        var transporter;
+        if (global.mailer) {
+            var ses = require('nodemailer-ses-transport');
+            transporter = nodemailer.createTransport(ses({
+                accessKeyId: global.AWSACCESSKEY,
+                secretAccessKey: global.AWSSECRETKEY
+            }));
+        } else {
+            transporter = nodemailer.createTransport(global.SMTP || null);
+        }
+
+        var mailOptions = {
+            from: global.SENDER,
+            to: !remail2 || details.iteration <= 10 ? remail : remail2,
+            subject: "Craydent Deploy Error - " + rname + ":" + rserver,
+            text: body
+            //html: '<b>Hello world </b>' // html body
+        };
+        var mailer_response = yield (yieldable(transporter.sendMail,transporter)(mailOptions));
+        if (mailer_response[0]) { flog("failure - " + rname + ":" + rserver + " email sent to " + remail + "."); }
+        else { flog("successful - " + rname + ":" + rserver + " email sent to " + remail + ". " + mailer_response[1].response); }
+
+        if (remail2) {
+            if (details.iteration <= 10) {
+                var interv = details.email_interval || global.EMAIL_INTERVAL || 3600000;
+                details.timeout = setTimeout(eval("(function () { send_email('" + details.cuid + "'); })"), interv);
+            } else {
+                clearTimeout(details.timeout);
+                delete log_tracker[details.cuid];
+            }
+        }
+    });
+}
+function check_apps(appname, server) {
+    var app_list = appname ? $c.where(apps,{name: appname}) : apps;
+    return syncroit(function* () {
+        //if (app_list != apps && !$c.where(apps,{name:app_list[0].name})[0]) { return; }
+        var asyncs = [], result_match = [];
+        for (var i = 0, len = app_list.length; i < len; i++) {
+            if (!app_list[i].autostart) { continue; }
+            for (var j = 0, jlen = app_list[i].servers.length; j < jlen; j++) {
+                if (server && app_list[i].servers[j] != server) { continue; }
+                result_match.push({
+                    name: app_list[i].name,
+                    nodejs:app_list[i].nodejs,
+                    server: app_list[i].servers[j],
+                    log: app_list[i].logfile[j],
+                    email: app_list[i].email,
+                    email2: app_list[i].email2,
+                    email_interval: app_list[i].email_interval,
+                    health_check_interval: app_list[i].health_check_interval,
+                    index:i
+                });
+                asyncs.push(CL.exec("ps aux | egrep \"node /var/craydent/nodejs/" + app_list[i].name + "/\".*|awk '{print $2}'"));
+            }
+        }
+        var results = yield $c.parallelEach(asyncs);
+        for (var i = 0, len = results.length; i < len; i++) {
+            var result = results[i].output,
+                rname = result_match[i].name,
+                rserver = result_match[i].server,
+                remail = result_match[i].email || global.EMAIL;
+
+            if (result.split('\n').length == 3) {
+                flog(rname + ":" + rserver + " has stopped and is being started.");
+                if (remail) {
+                    //send email
+                    yield send_email(result_match[i]);
+                    //var body = rname + ":" + rserver + " has stopped running and is being restarted\n\nLogs:\n\n\n" +
+                    //    (yield fsread(result_match[i].log))[1];
+                    //flog(rname + ":" + rserver + " email sent to " + remail + ".");
+                    //
+                    //var nodemailer = require('nodemailer');
+                    //var transporter;
+                    //if (global.mailer) {
+                    //    var ses = require('nodemailer-ses-transport');
+                    //    transporter = nodemailer.createTransport(ses({
+                    //        accessKeyId: global.AWSACCESSKEY,
+                    //        secretAccessKey: global.AWSSECRETKEY
+                    //    }));
+                    //} else {
+                    //    transporter = nodemailer.createTransport(global.SMTP || null);
+                    //}
+                    //
+                    //var mailOptions = {
+                    //    from: global.SENDER,
+                    //    to: remail,
+                    //    subject: "Craydent Deploy Error - " + rname + ":" + rserver,
+                    //    text: body
+                    //    //html: '<b>Hello world </b>' // html body
+                    //};
+                    //var mailer_response = yield (yieldable(transporter.sendMail,transporter)(mailOptions));
+                    //if (mailer_response[0]) { flog("failure -" + rname + ":" + rserver + " email sent to " + remail + "."); }
+                    //else { flog("successful - " + rname + ":" + rserver + " email sent to " + remail + ". " + mailer_response[1].response); }
+                }
+
+                yield _exec(shelldir + "deploy_script.sh " + rname + " start '' " + (result_match[i].nodejs || "''") + " '' '" + rserver + "'");
+            }
+            apptimeouts[rname + rserver] && clearInterval(apptimeouts[rname + rserver]);
+            apptimeouts[rname + rserver] = setTimeout(eval("(function () { check_apps('" + rname + "','" + rserver + "'); })"), result_match[i].health_check_interval || global.INTERVAL || 30000);
+        }
+        if (!i) {
+            apptimeouts["all"] && clearInterval(apptimeouts["all"]);
+            apptimeouts["all"] = setTimeout(check_apps, global.INTERVAL || 30000);
+        }
+    });
+}
+function flog () {
+    var mongojs, db;
+    if (global.MONGO_URI) {
+        mongojs = require('mongojs');
+        db = mongojs(global.MONGO_URI, ['log']);
+    }
     var prefix = $c.now('M d H:i:s')+' PID[' + process.pid + ']: ';
     for (var i = 0, len = arguments.length; i < len; i++) {
         if ($c.isString(arguments[i])) { console.log(prefix + arguments[i]); }
         else { console.log(prefix, arguments[i]); }
+        if (global.MONGO_URI) {
+            db.log.insert({pid:process.pid,created:$c.now('M d H:i:s'),message:$c.isString(arguments[i]) ? arguments[i] : JSON.stringifyAdvanced(arguments[i]) });
+        }
     }
 }
 function _exec (process) {
     return syncroit(function* (){
         var func = function (code, output, message) {
-            flog(message);
+            flog({code:code,output:output});
             io.emit("process_complete",{code:code,output:output});
             return arguments;
         };
@@ -465,6 +615,15 @@ function init_webserver() {
         }
         return self.end(fillTemplate(data, config));
     }).listen(global.HTTP_PORT);
+    server.all("/acknowledge/${cuid}", function* (req, res, params) {
+        var lt = log_tracker[params.cuid];
+        if (lt) {
+            clearTimeout(lt.timeout);
+            delete log_tracker[lt.cuid];
+            return self.send(200, {message:"Acknowledgment received."});
+        }
+        return self.send(200, {message:"Acknowledgment does not exist or has already been reviewed."});
+    });
     server.all("/build/${name}/${passcode}", function* (req, res, params) {
         return yield rest_action(this, "build", params);
     });

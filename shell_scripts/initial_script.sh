@@ -1,6 +1,6 @@
 #!/bin/bash
 #/*/---------------------------------------------------------/*/
-#/*/ Craydent LLC deploy-v1.1.0                              /*/
+#/*/ Craydent LLC deploy-v1.2.0                              /*/
 #/*/ Copyright 2011 (http://craydent.com/about)              /*/
 #/*/ Dual licensed under the MIT or GPL Version 2 licenses.  /*/
 #/*/ (http://craydent.com/license)                           /*/
@@ -32,3 +32,5 @@ cd /var/craydent/key/;
 ssh-keygen -t rsa -C "$email" -N '' -f /var/craydent/key/master_id_rsa;
 
 sudo chown -R $uname /var/craydent/;
+
+exit 0;
